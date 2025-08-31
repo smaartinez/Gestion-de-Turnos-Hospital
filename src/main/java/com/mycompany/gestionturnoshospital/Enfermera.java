@@ -1,10 +1,9 @@
-package com.mycompany.GestionTurnosHospital;
+package com.mycompany.gestionturnoshospital;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 public class Enfermera {
     private String nombre;

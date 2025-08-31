@@ -1,4 +1,4 @@
-package com.mycompany.GestionTurnosHospital;
+package com.mycompany.gestionturnoshospital;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -290,7 +290,7 @@ public class GestionTurnosHospital {
     private static Integer leerEnteroOpcional(String prompt) throws IOException {
         System.out.print(prompt); String s = br.readLine().trim();
         if (s.isEmpty()) return null;
-        try { return Integer.parseInt(s); } catch (NumberFormatException ex) { return null; }
+        try { return Integer.valueOf(s); } catch (NumberFormatException ex) { return null; }
     }
     private static List<String> toListaSkills(String csv) {
         if (csv == null || csv.trim().isEmpty()) return new ArrayList<>();

@@ -1,5 +1,6 @@
-package com.mycompany.GestionTurnosHospital;
+package com.mycompany.gestionturnoshospital;
 
+import com.mycompany.gestionturnoshospital.Area;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
