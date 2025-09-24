@@ -125,7 +125,9 @@ public class GestionEnfermeras extends javax.swing.JDialog {
     }//GEN-LAST:event_btnEditarEActionPerformed
 
     private void btnListarEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnListarEActionPerformed
-        // TODO add your handling code here:
+        DlgListarEnfermeras dlg = new DlgListarEnfermeras(this, true, enfSvc);
+        dlg.setVisible(true);
+       
     }//GEN-LAST:event_btnListarEActionPerformed
 
     private void btnVolverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVolverActionPerformed
@@ -137,6 +139,7 @@ public class GestionEnfermeras extends javax.swing.JDialog {
         agregar.setLocationRelativeTo(this);
         agregar.setVisible(true);
     }//GEN-LAST:event_btnAgregarEActionPerformed
+    
 
     /**
      * @param args the command line arguments
