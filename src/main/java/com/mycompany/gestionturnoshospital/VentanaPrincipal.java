@@ -147,7 +147,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_btnAsignarActionPerformed
 
     private void btnGestionarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGestionarActionPerformed
-        DlgGestionDatos dlg = new DlgGestionDatos(this, true);
+        DlgGestionDatos dlg = new DlgGestionDatos(this, true,GestionTurnosHospital.getEnfSvc());
         dlg.setLocationRelativeTo(this);
         dlg.setVisible(true);
     }//GEN-LAST:event_btnGestionarActionPerformed

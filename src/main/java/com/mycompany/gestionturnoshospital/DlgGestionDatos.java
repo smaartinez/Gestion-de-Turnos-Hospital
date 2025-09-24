@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JDialog.java to edit this template
  */
 package com.mycompany.gestionturnoshospital;
+import java.util.logging.Logger;
 
 /**
  *
@@ -11,19 +12,18 @@ package com.mycompany.gestionturnoshospital;
 public class DlgGestionDatos extends javax.swing.JDialog {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(DlgGestionDatos.class.getName());
-
+    private final EnfermeraService enfSvc;
     /**
      * Creates new form DlgGestionDatos
      */
-    public DlgGestionDatos(java.awt.Frame parent, boolean modal) {
-        super(parent, modal);
+
+    public DlgGestionDatos(java.awt.Frame owner, boolean modal, EnfermeraService enfSvc) {
+        super(owner, modal);
+        this.enfSvc = enfSvc;
         initComponents();
-        
     }
 
-    DlgGestionDatos() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+    
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -133,7 +133,7 @@ public class DlgGestionDatos extends javax.swing.JDialog {
 
     private void btnEnfermerasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnfermerasActionPerformed
         System.out.println("click enfermeras");
-        GestionEnfermeras e = new GestionEnfermeras(this, true);
+        GestionEnfermeras e = new GestionEnfermeras(this, true,enfSvc);
         e.setLocationRelativeTo(this);
         e.setVisible(true);
         
@@ -151,38 +151,37 @@ public class DlgGestionDatos extends javax.swing.JDialog {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
+    // Look & Feel Nimbus (opcional)
+    try {
+        for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+            if ("Nimbus".equals(info.getName())) {
+                javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                break;
             }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
+    } catch (Exception ex) { // simplificado: evita usar 'logger' no definido
+        Logger.getLogger(DlgGestionDatos.class.getName())
+              .log(java.util.logging.Level.SEVERE, null, ex);
+    }
 
-        /* Create and display the dialog */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                DlgGestionDatos dialog = new DlgGestionDatos(new javax.swing.JFrame(), true);
-                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
-                    @Override
-                    public void windowClosing(java.awt.event.WindowEvent e) {
-                        System.exit(0);
-                    }
-                });
-                dialog.setVisible(true);
+    // Crear y mostrar el diálogo
+    java.awt.EventQueue.invokeLater(() -> {
+        // Variante 1 (standalone de prueba):
+        EnfermeraService enfSvc = new EnfermeraService();
+
+        // Variante 2 (si tienes un getter estático y quieres compartir la instancia):
+        // EnfermeraService enfSvc = GestionTurnosHospital.getEnfSvc();
+
+        DlgGestionDatos dialog = new DlgGestionDatos(new javax.swing.JFrame(), true, enfSvc);
+        dialog.setLocationRelativeTo(null);
+        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosing(java.awt.event.WindowEvent e) {
+                System.exit(0);
             }
         });
-    }
+        dialog.setVisible(true);
+    });
+}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAreas;

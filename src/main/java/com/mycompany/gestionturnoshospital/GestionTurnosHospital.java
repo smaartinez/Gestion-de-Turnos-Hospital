@@ -32,6 +32,9 @@ public class GestionTurnosHospital {
             }
         } while (opcion != 0);
     }
+    public static EnfermeraService getEnfSvc(){
+        return enfSvc;
+    }
 
     // ===================== MENUS =====================
 

@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JDialog.java to edit this template
  */
 package com.mycompany.gestionturnoshospital;
+import java.util.logging.Logger;
 
 /**
  *
@@ -11,17 +12,17 @@ package com.mycompany.gestionturnoshospital;
 public class GestionEnfermeras extends javax.swing.JDialog {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(GestionEnfermeras.class.getName());
+    private final EnfermeraService enfSvc;
 
     /**
      * Creates new form GestionEnfermeras
      */
-    public GestionEnfermeras(java.awt.Frame parent, boolean modal) {
+    public GestionEnfermeras(java.awt.Dialog parent, boolean modal, EnfermeraService enfSvc) {
         super(parent, modal);
+        this.enfSvc = enfSvc;   // ✅ ahora sí tienes la instancia aquí
         initComponents();
-    }
-    public GestionEnfermeras(java.awt.Dialog parent, boolean modal) {
-        super(parent, modal);
-        initComponents();
+        pack();
+        setLocationRelativeTo(parent);
     }
 
 
@@ -47,6 +48,11 @@ public class GestionEnfermeras extends javax.swing.JDialog {
         jLabel1.setText("Gestion Enfermeras");
 
         btnAgregarE.setText("Agregar");
+        btnAgregarE.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAgregarEActionPerformed(evt);
+            }
+        });
 
         btnEditarE.setText("Editar");
         btnEditarE.addActionListener(new java.awt.event.ActionListener() {
@@ -126,42 +132,49 @@ public class GestionEnfermeras extends javax.swing.JDialog {
         dispose();
     }//GEN-LAST:event_btnVolverActionPerformed
 
+    private void btnAgregarEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarEActionPerformed
+        AgregarEnfermera agregar = new AgregarEnfermera(this,true,enfSvc);
+        agregar.setLocationRelativeTo(this);
+        agregar.setVisible(true);
+    }//GEN-LAST:event_btnAgregarEActionPerformed
+
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
+    public static void main(String[] args) {
+    // Look & Feel Nimbus (opcional)
+    try {
+        for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+            if ("Nimbus".equals(info.getName())) {
+                javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                break;
             }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
+    } catch (Exception ex) {
+        Logger.getLogger(GestionEnfermeras.class.getName())
+              .log(java.util.logging.Level.SEVERE, null, ex);
+    }
 
-        /* Create and display the dialog */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                GestionEnfermeras dialog = new GestionEnfermeras(new javax.swing.JFrame(), true);
-                dialog.addWindowListener(new java.awt.event.WindowAdapter() {
-                    @Override
-                    public void windowClosing(java.awt.event.WindowEvent e) {
-                        System.exit(0);
-                    }
-                });
-                dialog.setVisible(true);
+    // Crear y mostrar el diálogo
+    java.awt.EventQueue.invokeLater(() -> {
+        // instancia del servicio para esta prueba
+        EnfermeraService enfSvc = new EnfermeraService();
+
+        // tu constructor usa Dialog, no Frame, y además requiere el servicio
+        GestionEnfermeras dialog = new GestionEnfermeras(
+            (java.awt.Dialog) null,   // parent
+            true,                     // modal
+            enfSvc                    // servicio
+        );
+        dialog.setLocationRelativeTo(null);
+        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosing(java.awt.event.WindowEvent e) {
+                System.exit(0);
             }
         });
-    }
+        dialog.setVisible(true);
+    });
+}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAgregarE;
