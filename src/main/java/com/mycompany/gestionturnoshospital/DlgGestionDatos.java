@@ -18,6 +18,11 @@ public class DlgGestionDatos extends javax.swing.JDialog {
     public DlgGestionDatos(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
+        
+    }
+
+    DlgGestionDatos() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
     /**
@@ -94,7 +99,7 @@ public class DlgGestionDatos extends javax.swing.JDialog {
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addContainerGap(141, Short.MAX_VALUE)
+                        .addContainerGap(140, Short.MAX_VALUE)
                         .addComponent(jLabel3)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 126, Short.MAX_VALUE)
                         .addComponent(panel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -127,7 +132,11 @@ public class DlgGestionDatos extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnEnfermerasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnfermerasActionPerformed
-        // TODO add your handling code here:
+        System.out.println("click enfermeras");
+        GestionEnfermeras e = new GestionEnfermeras(this, true);
+        e.setLocationRelativeTo(this);
+        e.setVisible(true);
+        
     }//GEN-LAST:event_btnEnfermerasActionPerformed
 
     private void btnAreasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAreasActionPerformed
