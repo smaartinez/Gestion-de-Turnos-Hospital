@@ -63,6 +63,11 @@ public class GestionEnfermeras extends javax.swing.JDialog {
         });
 
         btnEliminarE.setText("Eliminar");
+        btnEliminarE.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEliminarEActionPerformed(evt);
+            }
+        });
 
         btnListarE.setText("Listar");
         btnListarE.addActionListener(new java.awt.event.ActionListener() {
@@ -148,6 +153,12 @@ public class GestionEnfermeras extends javax.swing.JDialog {
         agregar.setLocationRelativeTo(this);
         agregar.setVisible(true);
     }//GEN-LAST:event_btnAgregarEActionPerformed
+
+    private void btnEliminarEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarEActionPerformed
+        var dlg = new DlgEliminarEnfermera(this, true, enfSvc);
+        dlg.setVisible(true);
+        if (dlgLista != null && dlgLista.isShowing()) dlgLista.cargarTabla();
+    }//GEN-LAST:event_btnEliminarEActionPerformed
     
 
     /**
