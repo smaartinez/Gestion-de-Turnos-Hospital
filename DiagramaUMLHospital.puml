@@ -1,0 +1,58 @@
+@startuml
+class Hospital {
+  -nombre : String
+  -areas : List<Area>
+  +getNombre() : String
+  +setNombre(nombre : String)
+  +agregarArea(area : Area)
+  +editarArea(idx : int, nuevoNombre : String, cupM : Integer, cupT : Integer, cupN : Integer)
+}
+
+class Area {
+  -id : int
+  -nombre : String
+  -cuposManana : int
+  -cuposTarde : int
+  -cuposNoche : int
+  -skillsRequeridas : List<String>
+  +getNombre() : String
+}
+
+class Enfermera {
+  -nombre : String
+  -rut : String
+  -skills : List<String>
+  -disponibilidad : List<Disponibilidad>
+  -horasMensualMax : int
+  -horasAcumuladas : int
+  +setDisponibilidad(fecha : LocalDate, bloque : Bloque, disp : boolean)
+}
+
+class EnfermeraService {
+  -store : List<Enfermera>
+  -indexByRut : Map<String,Enfermera>
+  +agregar(nombre,rut,skills,horasMax)
+  +editar(idx,nuevoNombre,nuevoMax)
+  +eliminar(idx)
+}
+
+class Disponibilidad {
+  -fecha : LocalDate
+  -bloque : Bloque
+  -disponible : boolean
+  +getFecha() : LocalDate
+  +getBloque() : Bloque
+  +isDisponible() : boolean
+}
+
+enum Bloque {
+  MANANA
+  TARDE
+  NOCHE
+}
+
+Hospital "1" --> "*" Area
+EnfermeraService "1" --> "*" Enfermera
+Enfermera "1" --> "*" Disponibilidad
+Disponibilidad --> Bloque
+@enduml
