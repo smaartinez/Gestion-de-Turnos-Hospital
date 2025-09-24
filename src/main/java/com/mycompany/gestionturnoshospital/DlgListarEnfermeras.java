@@ -40,7 +40,7 @@ public class DlgListarEnfermeras extends javax.swing.JDialog {
     tblEnfermeras.setModel(model);
     tblEnfermeras.setAutoCreateRowSorter(true);   // ordenar por columnas
 }
-    private void cargarTabla() {
+    void cargarTabla() {
     var model = (javax.swing.table.DefaultTableModel) tblEnfermeras.getModel();
     model.setRowCount(0); // limpia filas
 

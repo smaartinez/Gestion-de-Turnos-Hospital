@@ -13,6 +13,7 @@ public class GestionEnfermeras extends javax.swing.JDialog {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(GestionEnfermeras.class.getName());
     private final EnfermeraService enfSvc;
+    private DlgListarEnfermeras dlgLista;
 
     /**
      * Creates new form GestionEnfermeras
@@ -121,12 +122,20 @@ public class GestionEnfermeras extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnEditarEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditarEActionPerformed
-        // TODO add your handling code here:
+        var dlg = new DlgEditarEnfermera(this, true, enfSvc);
+        dlg.setVisible(true);
+        if (dlgLista != null && dlgLista.isShowing()) {
+            dlgLista.cargarTabla();
+        }
     }//GEN-LAST:event_btnEditarEActionPerformed
 
     private void btnListarEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnListarEActionPerformed
-        DlgListarEnfermeras dlg = new DlgListarEnfermeras(this, true, enfSvc);
-        dlg.setVisible(true);
+        if (dlgLista == null || !dlgLista.isShowing()) {
+        dlgLista = new DlgListarEnfermeras(this, false, enfSvc); // no modal para poder verla/actualizarla
+    }
+        dlgLista.setLocationRelativeTo(this);
+        dlgLista.setVisible(true);
+        dlgLista.cargarTabla();
        
     }//GEN-LAST:event_btnListarEActionPerformed
 
