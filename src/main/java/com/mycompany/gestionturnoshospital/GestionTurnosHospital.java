@@ -35,6 +35,10 @@ public class GestionTurnosHospital {
     public static EnfermeraService getEnfSvc(){
         return enfSvc;
     }
+    
+    public static Hospital getHospital() {
+        return hospital;
+    }
 
     // ===================== MENUS =====================
 

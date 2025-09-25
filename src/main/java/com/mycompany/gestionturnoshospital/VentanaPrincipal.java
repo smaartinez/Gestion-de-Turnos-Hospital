@@ -131,9 +131,85 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_btnSalirActionPerformed
 
     private void btnImportarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportarActionPerformed
-        // TODO add your handling code here:
+        
+        try {
+            javax.swing.JFileChooser fc = new javax.swing.JFileChooser();
+            fc.setDialogTitle("Selecciona la carpeta que contiene enfermeras/areas/disponibilidades");
+            fc.setFileSelectionMode(javax.swing.JFileChooser.DIRECTORIES_ONLY);
+            int r = fc.showOpenDialog(this);
+            if (r != javax.swing.JFileChooser.APPROVE_OPTION) return;
+
+            java.io.File dir = fc.getSelectedFile();
+            java.nio.file.Path folder = dir.toPath();
+
+            java.util.List<java.nio.file.Path> csvs = new java.util.ArrayList<>();
+            try (java.util.stream.Stream<java.nio.file.Path> st = java.nio.file.Files.list(folder)) {
+                st.filter(p -> p.getFileName().toString().toLowerCase().endsWith(".csv"))
+                  .forEach(csvs::add);
+            }
+            if (csvs.isEmpty()) {
+                javax.swing.JOptionPane.showMessageDialog(this, "No se encontraron .csv en la carpeta.",
+                        "Importar datos", javax.swing.JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            java.nio.file.Path enfCsv = null, areaCsv = null, dispCsv = null;
+
+            for (java.nio.file.Path p : csvs) {
+                String header;
+                try (java.io.BufferedReader br = java.nio.file.Files.newBufferedReader(p, java.nio.charset.StandardCharsets.UTF_8)) {
+                    header = br.readLine();
+                }
+                if (header == null) continue;
+
+                String h = sanitizeHeader(header).toLowerCase();
+                // OJO: todo en minúsculas al comparar:
+                if (h.equals("rut,nombre,horasmensualmax,skills") && enfCsv == null) {
+                    enfCsv = p;
+                } else if (h.equals("id,nombre,cuposmanana,cupostarde,cuposnoche,skillsrequeridas") && areaCsv == null) {
+                    areaCsv = p;
+                } else if ((h.equals("rut,fecha,bloque,disponible") || h.equals("rut,fecha,bloque,area,disponible")) && dispCsv == null) {
+                    dispCsv = p;
+                }
+            }
+
+            if (enfCsv == null || areaCsv == null || dispCsv == null) {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                    "Faltan CSV requeridos:\n" +
+                    (enfCsv == null ? " - enfermeras (rut,nombre,horasMensualMax,skills)\n" : "") +
+                    (areaCsv == null ? " - areas (id,nombre,cuposManana,cuposTarde,cuposNoche,skillsRequeridas)\n" : "") +
+                    (dispCsv == null ? " - disponibilidades (rut,fecha,bloque[,area],disponible)\n" : ""),
+                    "Importar datos", javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            EnfermeraService enfSvc = GestionTurnosHospital.getEnfSvc();
+            Hospital hospital = GestionTurnosHospital.getHospital();
+
+            DlgImportarDatos.importEnfermeras(enfCsv, enfSvc);
+            DlgImportarDatos.importAreas(areaCsv, hospital);
+            DlgImportarDatos.importDisponibilidades(dispCsv, enfSvc);
+
+            javax.swing.JOptionPane.showMessageDialog(this,
+                "Importación completada:\n" +
+                "Enfermeras: " + enfSvc.count() + "\n" +
+                "Áreas: " + hospital.getAreas().size() + "\n" +
+                "Disponibilidades: OK",
+                "Importar datos", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (Exception ex) {
+            logger.log(java.util.logging.Level.SEVERE, "Error importando CSV", ex);
+            javax.swing.JOptionPane.showMessageDialog(this,
+                "Error al importar: " + ex.getMessage(),
+                "Importar datos", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_btnImportarActionPerformed
 
+    private static String sanitizeHeader(String header) {
+        if (header == null) return null;
+        return header.replace("\uFEFF", "").trim();
+    }
+    
     private void btnConflictosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConflictosActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_btnConflictosActionPerformed

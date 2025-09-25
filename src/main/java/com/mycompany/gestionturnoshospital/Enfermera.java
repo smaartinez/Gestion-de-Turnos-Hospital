@@ -9,10 +9,10 @@ public class Enfermera {
     private String nombre;
     private final String rut; // identidad
     private final List<String> skills;
-    private final List<Disponibilidad> disponibilidad;
+    private final List<Disponibilidad> disponibilidades;
     private int horasMensualMax;
     private int horasAcumuladas;
-
+    
     // ------------ Constructores ------------
     public Enfermera(String nombre, String rut, List<String> skills, int horasMensualMax) {
         if (nombre == null || nombre.isBlank()) throw new IllegalArgumentException("Nombre inválido");
@@ -23,7 +23,7 @@ public class Enfermera {
         this.rut = rut.trim();
         this.skills = new ArrayList<>();
         if (skills != null) for (String s : skills) addSkill(s);
-        this.disponibilidad = new ArrayList<>();
+        this.disponibilidades = new ArrayList<>();
         this.horasMensualMax = horasMensualMax;
         this.horasAcumuladas = 0;
     }
@@ -36,7 +36,10 @@ public class Enfermera {
     public String getNombre() { return nombre; }
     public String getRut()    { return rut; }
     public List<String> getSkills() { return Collections.unmodifiableList(skills); }
-    public List<Disponibilidad> getDisponibilidad() { return Collections.unmodifiableList(disponibilidad); }
+    
+    public List<Disponibilidad> getDisponibilidad() { return Collections.unmodifiableList(disponibilidades); }
+    public List<Disponibilidad> getDisponibilidades() { return Collections.unmodifiableList(disponibilidades); }
+    
     public int getHorasMensualMax() { return horasMensualMax; }
     public int getHorasAcumuladas() { return horasAcumuladas; }
     public int horasRestantes() { return Math.max(0, horasMensualMax - horasAcumuladas); }
@@ -58,8 +61,8 @@ public class Enfermera {
         if (nuevas != null) for (String s : nuevas) addSkill(s);
     }
     public void setDisponibilidad(List<Disponibilidad> lista) {
-        this.disponibilidad.clear();
-        if (lista != null) this.disponibilidad.addAll(lista);
+        this.disponibilidades.clear();
+        if (lista != null) this.disponibilidades.addAll(lista);
     }
     public void setHorasAcumuladas(int h) {
         if (h < 0) throw new IllegalArgumentException("Horas negativas");
@@ -89,25 +92,31 @@ public class Enfermera {
         if (fecha == null || bloque == null) throw new IllegalArgumentException("Fecha/bloque inválidos");
         int idx = indexDisponibilidad(fecha, bloque);
         Disponibilidad nueva = new Disponibilidad(fecha, bloque, disponible);
-        if (idx >= 0) disponibilidad.set(idx, nueva); else disponibilidad.add(nueva);
+        if (idx >= 0) disponibilidades.set(idx, nueva); else disponibilidades.add(nueva);
     }
     // Sobrecarga: por objeto
     public void setDisponibilidad(Disponibilidad d) {
         if (d == null) throw new IllegalArgumentException("Disponibilidad nula");
         setDisponibilidad(d.getFecha(), d.getBloque(), d.isDisponible());
     }
+    
+    public void agregarDisponibilidad(Disponibilidad d) {
+        if (d == null) throw new IllegalArgumentException("Disponibilidad nula");
+        setDisponibilidad(d.getFecha(), d.getBloque(), d.isDisponible());
+    }
+    
     public boolean removeDisponibilidad(LocalDate fecha, Bloque bloque) {
         int idx = indexDisponibilidad(fecha, bloque);
-        if (idx >= 0) { disponibilidad.remove(idx); return true; }
+        if (idx >= 0) { disponibilidades.remove(idx); return true; }
         return false;
     }
     public boolean disponiblePara(LocalDate fecha, Bloque bloque) {
         int idx = indexDisponibilidad(fecha, bloque);
-        return (idx >= 0) && disponibilidad.get(idx).isDisponible();
+        return (idx >= 0) && disponibilidades.get(idx).isDisponible();
     }
     private int indexDisponibilidad(LocalDate fecha, Bloque bloque) {
-        for (int i = 0; i < disponibilidad.size(); i++) {
-            Disponibilidad d = disponibilidad.get(i);
+        for (int i = 0; i < disponibilidades.size(); i++) {
+            Disponibilidad d = disponibilidades.get(i);
             if (d.getFecha().equals(fecha) && d.getBloque() == bloque) return i;
         }
         return -1;
@@ -123,6 +132,5 @@ public class Enfermera {
         return true;
     }
     public void resetHorasAcumuladas() { this.horasAcumuladas = 0; }
-
- 
+    
 }
