@@ -14,6 +14,10 @@ public class Hospital {
         this.nombre = nombre.trim();
     }
 
+    Hospital() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) {
         if (nombre == null || nombre.isBlank()) throw new IllegalArgumentException("Nombre inválido");

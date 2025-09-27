@@ -231,7 +231,8 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     }
     
     private void btnConflictosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConflictosActionPerformed
-        // TODO add your handling code here:
+        DlgConflictos dlg = new DlgConflictos(this, GestionTurnosHospital.getHospital(),GestionTurnosHospital.getEnfSvc());
+        dlg.setVisible(true);
     }//GEN-LAST:event_btnConflictosActionPerformed
 
     private void btnCalendarioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCalendarioActionPerformed

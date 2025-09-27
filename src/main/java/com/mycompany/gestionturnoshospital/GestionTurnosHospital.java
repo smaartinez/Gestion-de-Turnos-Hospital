@@ -242,6 +242,125 @@ public class GestionTurnosHospital {
     }
 
     // --------- Asignación / Calendario / Conflictos (stubs) ---------
+    private static int cuposDe(Area a, Bloque b) {
+        switch (b) {
+            case MANANA: return a.getCuposManana();
+            case TARDE:  return a.getCuposTarde();
+            case NOCHE:  return a.getCuposNoche();
+            default:     return 0;
+        }
+    }
+    private static final int HORAS_POR_TURNO = 8;
+
+    private static void asignacionAutomaticaMVP() throws IOException {
+        if (hospital.countAreas() == 0) { System.out.println("No hay áreas."); return; }
+        if (enfSvc.count() == 0)         { System.out.println("No hay enfermeras."); return; }
+
+        LocalDate fecha = leerFecha("Fecha (YYYY-MM-DD) a planificar: ");
+
+        System.out.println("\n[Asignación automática para " + fecha + "]");
+        for (Area a : hospital.getAreas()) {
+            for (Bloque b : Bloque.values()) {
+                int cupos = cuposDe(a, b);
+                if (cupos <= 0) continue;
+
+                // 1) Candidatas disponibles en esa fecha/bloque
+                List<Enfermera> disponibles = enfSvc.filtrarDisponibles(fecha, b);
+                // 2) Filtrar por skills requeridas del área
+                List<String> req = a.getSkillsRequeridas();
+                List<Enfermera> candidatas = new ArrayList<>();
+                for (Enfermera e : disponibles) {
+                    boolean okSkills = true;
+                    if (req != null && !req.isEmpty()) {
+                        for (String s : req) {
+                            if (!e.tieneSkill(s)) { okSkills = false; break; }
+                        }
+                    }
+                    if (okSkills && e.puedeTomarHoras(HORAS_POR_TURNO)) {
+                        candidatas.add(e);
+                    }
+                }
+
+                // 3) Greedy simple: tomar las primeras hasta llenar cupos
+                int asignadas = 0;
+                for (Enfermera e : candidatas) {
+                    if (asignadas >= cupos) break;
+                    // registrar horas y consumir disponibilidad
+                    if (e.registrarHoras(HORAS_POR_TURNO)) {
+                        e.removeDisponibilidad(fecha, b); // evita reasignarla en el mismo bloque
+                        asignadas++;
+                        System.out.printf("Asignado: %-12s -> %-12s [%s %s]%n",
+                                e.getNombre(), a.getNombre(), fecha, b);
+                    }
+                }
+
+                if (asignadas < cupos) {
+                    System.out.printf("⚠ Faltaron %d cupos en %s [%s]%n",
+                            (cupos - asignadas), a.getNombre(), b);
+                }
+            }
+        }
+    }
+    private static void gestionManualAsignacion() throws IOException {
+        if (hospital.countAreas() == 0) { System.out.println("No hay áreas."); return; }
+        if (enfSvc.count() == 0)         { System.out.println("No hay enfermeras."); return; }
+
+        // Elegir área
+        listarAreas();
+        int idxA = leerEntero("Seleccione # de Área: ") - 1;
+        List<Area> areas = hospital.getAreas();
+        if (idxA < 0 || idxA >= areas.size()) { System.out.println("Índice inválido."); return; }
+        Area area = areas.get(idxA);
+
+        // Elegir fecha y bloque
+        LocalDate fecha = leerFecha("Fecha (YYYY-MM-DD): ");
+        Bloque bloque   = leerBloque("Bloque [1=MANANA, 2=TARDE, 3=NOCHE]: ");
+        int cupos = cuposDe(area, bloque);
+        if (cupos <= 0) { System.out.println("El área no tiene cupos en ese bloque."); return; }
+
+        // Candidatas
+        List<String> req = area.getSkillsRequeridas();
+        List<Enfermera> disponibles = enfSvc.filtrarDisponibles(fecha, bloque);
+        List<Enfermera> candidatas = new ArrayList<>();
+        for (Enfermera e : disponibles) {
+            boolean okSkills = true;
+            if (req != null && !req.isEmpty()) {
+                for (String s : req) { if (!e.tieneSkill(s)) { okSkills = false; break; } }
+            }
+        if (okSkills && e.puedeTomarHoras(HORAS_POR_TURNO)) candidatas.add(e);
+        }
+
+        if (candidatas.isEmpty()) { System.out.println("No hay candidatas disponibles que cumplan requisitos."); return; }
+
+        // Mostrar candidatas
+        System.out.println("\n#  Enfermera             Skills              Horas [acum/max]");
+        for (int i = 0; i < candidatas.size(); i++) {
+            Enfermera e = candidatas.get(i);
+            System.out.printf("%d) %-20s %-20s %d/%d%n",
+                    (i+1), e.getNombre(), e.getSkills(), e.getHorasAcumuladas(), e.getHorasMensualMax());
+        }
+
+        // Elegir una
+        int idxE = leerEntero("Seleccione # de enfermera a asignar: ") - 1;
+        if (idxE < 0 || idxE >= candidatas.size()) { System.out.println("Índice inválido."); return; }
+        Enfermera sel = candidatas.get(idxE);
+
+        // Asignar (registrar horas + consumir disponibilidad)
+        if (!sel.puedeTomarHoras(HORAS_POR_TURNO)) {
+            System.out.println("No puede tomar más horas este mes.");
+            return;
+        }
+        sel.registrarHoras(HORAS_POR_TURNO);
+        sel.removeDisponibilidad(fecha, bloque);
+
+        System.out.printf("Asignado: %s -> %s [%s %s]%n",
+                sel.getNombre(), area.getNombre(), fecha, bloque);
+
+        // Aviso por cupos
+        if (cupos > 1) {
+            System.out.printf("Quedan %d cupos en el área %s para %s.%n", (cupos - 1), area.getNombre(), bloque);
+        }
+    }
     private static void menuAsignarTurnos() throws IOException {
         int op;
         do {
@@ -251,23 +370,81 @@ public class GestionTurnosHospital {
             System.out.println("0) Volver");
             op = leerEntero("Opcion: ");
             switch (op) {
-                case 1: System.out.println("(Pendiente) Motor automático."); pause(); break;
-                case 2: System.out.println("(Pendiente) Gestión manual.");   pause(); break;
+                case 1: asignacionAutomaticaMVP(); pause(); break;
+                case 2: gestionManualAsignacion(); pause(); break;
                 case 0: break;
                 default: System.out.println("Opcion invalida"); pause();
             }
         } while (op != 0);
-    }
+}
 
     private static void visualizarCalendario() {
         System.out.println("\n--- Visualización de Calendario ---");
         System.out.println("(Pendiente) Mostrar calendario por día/semana/mes, filtros por área/enfermera.");
     }
 
-    private static void menuConflictos() {
+    private static void menuConflictos() throws IOException {
         System.out.println("\n--- Conflictos ---");
-        System.out.println("(Pendiente) Mostrar conflictos detectados y opciones de resolución.");
+        if (hospital.countAreas() == 0) { System.out.println("No hay áreas."); pause(); return; }
+        if (enfSvc.count() == 0)       { System.out.println("No hay enfermeras."); pause(); return; }
+
+    
+        LocalDate fecha = leerFecha("Fecha (YYYY-MM-DD) a analizar: ");
+        Bloque  bloque  = leerBloque("Bloque [1=MANANA, 2=TARDE, 3=NOCHE]: ");
+
+        System.out.println("\n[Conflictos de cobertura para " + fecha + " - " + bloque + "]");
+
+        // 1) Déficit/sobrante por área según cupos y candidatas elegibles
+        int totalCupos = 0;
+        int totalPotencialesSinDedupe = 0; // solo informativo
+        List<Enfermera> disponiblesBloque = enfSvc.filtrarDisponibles(fecha, bloque); 
+
+        for (Area a : hospital.getAreas()) { 
+            int cupos = cuposDe(a, bloque);   
+            if (cupos <= 0) continue;
+            totalCupos += cupos;
+
+            // Filtrar por skills requeridas del área
+            List<String> req = a.getSkillsRequeridas(); 
+            List<Enfermera> candidatas = new ArrayList<>();
+            for (Enfermera e : disponiblesBloque) {
+                boolean okSkills = true;
+                if (req != null && !req.isEmpty()) {
+                    for (String s : req) { if (!e.tieneSkill(s)) { okSkills = false; break; } } 
+                }
+                if (okSkills && e.puedeTomarHoras(HORAS_POR_TURNO)) { 
+                    candidatas.add(e);
+                }
+            }
+            totalPotencialesSinDedupe += candidatas.size();
+
+            if (candidatas.size() < cupos) {
+                System.out.printf("⚠ Déficit en %-15s: faltan %d (cupos=%d, elegibles=%d)%n",
+                        a.getNombre(), (cupos - candidatas.size()), cupos, candidatas.size());
+            } else {
+                System.out.printf("OK %-20s: cupos=%d, elegibles=%d%n",
+                        a.getNombre(), cupos, candidatas.size());
+            }
     }
+
+    // 2) Alertas de horas (por si alguien quedó excedido manualmente)
+    boolean halloExceso = false;
+    for (Enfermera e : enfSvc.listar()) { 
+        if (e.getHorasAcumuladas() > e.getHorasMensualMax()) { 
+            if (!halloExceso) { System.out.println("\n[Alertas de horas]"); halloExceso = true; }
+            System.out.printf("⚠ %s: %d/%d horas (excedida)%n",
+                    e.getNombre(), e.getHorasAcumuladas(), e.getHorasMensualMax());
+        }
+    }
+    if (!halloExceso) System.out.println("\n[Alertas de horas] Sin excedentes detectados.");
+
+    // 3) Resumen global (informativo)
+    System.out.println("\n[Resumen]");
+    System.out.printf("Cupos totales requeridos: %d%n", totalCupos);
+    System.out.printf("Candidatas potenciales (no deduplicadas por área): %d%n", totalPotencialesSinDedupe);
+    pause();
+}
+
 
     // -------------------- UTILIDADES --------------------
     private static void importarDatosDemo() {
