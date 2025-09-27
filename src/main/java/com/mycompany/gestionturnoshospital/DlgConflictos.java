@@ -207,6 +207,7 @@ public class DlgConflictos extends javax.swing.JDialog {
         JPanel left = new JPanel(new BorderLayout());
         left.setBorder(new TitledBorder("Áreas"));
         lstAreasDetalle = new JList<>(hospital.getAreas().toArray(new Area[0]));
+        lstAreasDetalle.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         left.add(new JScrollPane(lstAreasDetalle), BorderLayout.CENTER);
         root.add(left, BorderLayout.WEST);
 
@@ -410,35 +411,47 @@ public class DlgConflictos extends javax.swing.JDialog {
         DefaultTableModel md = (DefaultTableModel) tblElegiblesArea.getModel();
         md.setRowCount(0);
 
-        Area area = lstAreasDetalle.getSelectedValue();
-        if (area == null) return;
+    
+        List<Area> areasSel = lstAreasDetalle.getSelectedValuesList();
+        if (areasSel == null || areasSel.isEmpty()) return;
 
         LocalDate fecha = readFechaOrWarn();
         if (fecha == null) return;
         Bloque bloque = (Bloque) cboBloque.getSelectedItem();
 
         List<Enfermera> disponibles = enfSvc.filtrarDisponibles(fecha, bloque);
-        List<Enfermera> cand = filtrarCandidatas(disponibles, area);
 
         boolean exigirSkills = chkFiltrarSkillsArea.isSelected();
         boolean exigirHoras  = chkFiltrarHorasArea.isSelected();
-        String filtroNombre = txtBuscarNombre.getText().trim().toLowerCase(Locale.ROOT);
+        String filtroNombre  = txtBuscarNombre.getText().trim().toLowerCase(java.util.Locale.ROOT);
 
-        List<String> req = area.getSkillsRequeridas();
         int i = 1;
-        for (Enfermera e : cand) {
-            if (exigirSkills && req != null && !req.isEmpty()) {
-                boolean ok = true;
-                for (String s : req) if (!e.tieneSkill(s)) { ok = false; break; }
-                if (!ok) continue;
-            }
-            if (exigirHoras && !e.puedeTomarHoras(HORAS_POR_TURNO)) continue;
-            if (!filtroNombre.isEmpty() && !e.getNombre().toLowerCase(Locale.ROOT).contains(filtroNombre)) continue;
+    
+        java.util.Set<String> dedupe = new java.util.HashSet<>();
 
-            String skills = String.valueOf(e.getSkills());
-            String horas  = e.getHorasAcumuladas() + "/" + e.getHorasMensualMax();
-            boolean disponible = e.puedeTomarHoras(HORAS_POR_TURNO);
-            md.addRow(new Object[]{ i++, e.getNombre(), skills, horas, disponible ? "Sí" : "No" });
+        for (Area area : areasSel) {
+            List<Enfermera> cand = filtrarCandidatas(disponibles, area); // ya aplica criterios globales
+            List<String> req = area.getSkillsRequeridas();
+
+            for (Enfermera e : cand) {
+                if (exigirSkills && req != null && !req.isEmpty()) {
+                    boolean ok = true;
+                    for (String s : req) if (!e.tieneSkill(s)) { ok = false; break; }
+                    if (!ok) continue;
+                }
+                if (exigirHoras && !e.puedeTomarHoras(HORAS_POR_TURNO)) continue;
+                if (!filtroNombre.isEmpty() &&
+                    !e.getNombre().toLowerCase(java.util.Locale.ROOT).contains(filtroNombre)) continue;
+
+                String key = area.getNombre() + "|" + e.getNombre();
+                if (!dedupe.add(key)) continue; // ya agregado para esa área
+
+                String skills = String.valueOf(e.getSkills());
+                String horas  = e.getHorasAcumuladas() + "/" + e.getHorasMensualMax();
+                boolean disponible = e.puedeTomarHoras(HORAS_POR_TURNO);
+
+                md.addRow(new Object[]{ area.getNombre(), i++, e.getNombre(), skills, horas, disponible ? "Sí" : "No" });
+            }
         }
     }
 
