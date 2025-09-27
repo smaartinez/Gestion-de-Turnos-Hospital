@@ -176,17 +176,18 @@ public class GestionEnfermeras extends javax.swing.JDialog {
         if (e == null) {
             JOptionPane.showMessageDialog(this, "No existe una enfermera con ese RUT.");
             return;
-            }
+        }
 
-            
         JTextField tfFecha = new JTextField(LocalDate.now().toString()); // yyyy-MM-dd
         JComboBox<String> cbBloque = new JComboBox<>(new String[]{"MANANA","TARDE","NOCHE"});
+        JTextField tfArea = new JTextField(); // ⬅️ NUEVO (opcional)
         JCheckBox chkDisp = new JCheckBox("Disponible", true);
 
         JPanel p = new JPanel(new java.awt.GridLayout(0,2,6,6));
         p.add(new JLabel("Fecha (yyyy-MM-dd):")); p.add(tfFecha);
-        p.add(new JLabel("Bloque:")); p.add(cbBloque);
-        p.add(new JLabel(""));p.add(chkDisp);
+        p.add(new JLabel("Bloque:"));             p.add(cbBloque);
+        p.add(new JLabel("Área (opcional):"));    p.add(tfArea);          // ⬅️ NUEVO
+        p.add(new JLabel(""));                    p.add(chkDisp);
 
         int r = JOptionPane.showConfirmDialog(
             this, p,
@@ -194,7 +195,6 @@ public class GestionEnfermeras extends javax.swing.JDialog {
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (r != JOptionPane.OK_OPTION) return;
 
-            
         LocalDate fecha;
         try {
             fecha = LocalDate.parse(tfFecha.getText().trim());
@@ -202,20 +202,27 @@ public class GestionEnfermeras extends javax.swing.JDialog {
             JOptionPane.showMessageDialog(this, "Fecha inválida. Formato: yyyy-MM-dd");
             return;
         }
-        String bTxt = cbBloque.getSelectedItem().toString().toUpperCase();
+
         Bloque bloque;
         try {
-            bloque = Bloque.valueOf(bTxt); 
+            bloque = Bloque.valueOf(cbBloque.getSelectedItem().toString().toUpperCase());
         } catch (IllegalArgumentException ex) {
             JOptionPane.showMessageDialog(this, "Bloque inválido.");
             return;
         }
 
+        String area = tfArea.getText().trim();
+        if (area.isBlank()) area = null; // opcional
         boolean disponible = chkDisp.isSelected();
-        e.setDisponibilidad(fecha, bloque, disponible);
+
+        // ⬅️ GUARDAR **CON ÁREA**
+        e.setDisponibilidad(new Disponibilidad(fecha, bloque, area, disponible));
+
         JOptionPane.showMessageDialog(this,
             "Disponibilidad actualizada:\n" +
-            fecha + " " + bloque + " → " + (disponible ? "DISPONIBLE" : "NO DISPONIBLE"));
+            fecha + " " + bloque +
+            (area == null ? "" : " (" + area + ")") +
+            " → " + (disponible ? "DISPONIBLE" : "NO DISPONIBLE"));
     }//GEN-LAST:event_btnGestionarDisponibilidadActionPerformed
     
 

@@ -19,6 +19,8 @@ public class EnfermeraService {
         Enfermera e = new Enfermera(nombre, rut, skills, horasMax);
         store.add(e);
         indexByRut.put(k, e);
+        
+        GestionTurnosHospital.persistIfPossible();
     }
 
     public void add(Enfermera e) {
@@ -27,6 +29,8 @@ public class EnfermeraService {
         if (indexByRut.containsKey(k)) throw new IllegalArgumentException("Ya existe enfermera con RUT " + e.getRut());
         store.add(e);
         indexByRut.put(k, e);
+        
+        GestionTurnosHospital.persistIfPossible();
     }
 
     public void editar(int idx, String nuevoNombre, Integer nuevoMax) {
@@ -34,11 +38,16 @@ public class EnfermeraService {
         if (nuevoNombre != null && !nuevoNombre.isBlank()) e.setNombre(nuevoNombre);
         if (nuevoMax != null) e.setHorasMensualMax(nuevoMax);
         // RUT es final → índice no cambia
+        
+        GestionTurnosHospital.persistIfPossible();
     }
 
     public Enfermera eliminar(int idx) {
         Enfermera e = store.remove(idx);
         if (e != null) indexByRut.remove(key(e.getRut()));
+        
+        GestionTurnosHospital.persistIfPossible();
+        
         return e;
     }
 

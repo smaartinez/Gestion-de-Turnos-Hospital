@@ -277,35 +277,47 @@ public class DlgImportarDatos extends javax.swing.JDialog {
 
     public static void importDisponibilidades(Path csv, EnfermeraService svc) throws IOException {
         try (BufferedReader br = Files.newBufferedReader(csv, StandardCharsets.UTF_8)) {
-            String header = br.readLine();
-            if (header == null) throw new IOException("CSV vacío: " + csv.getFileName());
-            String h = header.trim().toLowerCase();
-            boolean tieneArea = h.equals("rut,fecha,bloque,area,disponible");
-            boolean sinArea   = h.equals("rut,fecha,bloque,disponible");
-            if (!tieneArea && !sinArea) {
-                throw new IOException("Encabezado inesperado en " + csv.getFileName());
-            }
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.isBlank()) continue;
-                List<String> t = splitCsvLine(line);
-                String rut      = t.get(0).trim();
-                LocalDate fecha = LocalDate.parse(t.get(1).trim());
-                Bloque bloque = parseBloqueFlexible(t.get(2));
-                boolean disp    = Boolean.parseBoolean(t.get(tieneArea ? 4 : 3).trim());
-                Enfermera e = svc.buscarPorRut(rut);
-                if (e != null) {
-                    e.agregarDisponibilidad(new Disponibilidad(fecha, bloque, disp));
-                }
-            }
-            GestionTurnosHospital.setUltimoCsvDisponibilidades(csv);
+        String header = br.readLine();
+        if (header == null) throw new IOException("CSV vacío: " + csv.getFileName());
+        String h = header.trim().toLowerCase();
+        boolean tieneArea = h.equals("rut,fecha,bloque,area,disponible");
+        boolean sinArea   = h.equals("rut,fecha,bloque,disponible");
+        if (!tieneArea && !sinArea) {
+            throw new IOException("Encabezado inesperado en " + csv.getFileName());
         }
+
+        String line;
+        while ((line = br.readLine()) != null) {
+            if (line.isBlank()) continue;
+            List<String> t = splitCsvLine(line);
+
+            String rut      = t.get(0).trim();
+            LocalDate fecha = LocalDate.parse(t.get(1).trim());
+            // usa el mismo flexible que ya tenías:
+            Bloque bloque   = parseBloqueFlexible(t.get(2));
+            String area     = tieneArea ? t.get(3).trim() : null;
+            boolean disp    = Boolean.parseBoolean(t.get(tieneArea ? 4 : 3).trim());
+
+            Enfermera e = svc.buscarPorRut(rut);
+            if (e != null) {
+                // ahora persistimos el área también
+                e.agregarDisponibilidad(new Disponibilidad(fecha, bloque,area,disp));
+            }
+        }
+        GestionTurnosHospital.setUltimoCsvDisponibilidades(csv);
     }
+    }
+
+// Helpers locales a este archivo:
     private static Bloque parseBloqueFlexible(String s) {
-    String x = s.trim().toUpperCase();
-    if (x.equals("MAÑANA")) x = "MANANA";
-    return Bloque.valueOf(x);
+        return Bloque.valueOf(s.trim().toUpperCase().replace('Ñ','N')); // MANANA/TARDE/NOCHE
     }
+    private static String emptyToNull(String s) {
+        if (s == null) return null;
+        s = s.trim();
+        return s.isEmpty() ? null : s;
+    }
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEnfermeras;
     private javax.swing.JButton btnEnfermeras1;

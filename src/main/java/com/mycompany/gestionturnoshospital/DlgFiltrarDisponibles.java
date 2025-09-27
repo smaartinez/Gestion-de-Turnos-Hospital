@@ -59,54 +59,18 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
     }
 
     private void buscar() {
-    try {
+     try {
         LocalDate fechaSel = java.time.LocalDate.parse(jTextField1.getText().trim());
         Bloque bloqueSel = parseBloqueFlexible((String) jComboBox1.getSelectedItem());
 
-        java.nio.file.Path csv = GestionTurnosHospital.getUltimoCsvDisponibilidades();
-        if (csv == null) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Primero importa disponibilidades.csv");
-            return;
-        }
-
-        java.util.Map<String, String> candidatos = new java.util.LinkedHashMap<>();
-        try (java.io.BufferedReader br = java.nio.file.Files.newBufferedReader(csv, java.nio.charset.StandardCharsets.UTF_8)) {
-            String header = br.readLine();
-            if (header == null) throw new RuntimeException("CSV disponibilidades vacío");
-            String h = header.trim().toLowerCase();
-            boolean conArea = h.equals("rut,fecha,bloque,area,disponible");
-            boolean sinArea = h.equals("rut,fecha,bloque,disponible");
-            if (!conArea && !sinArea) throw new RuntimeException("Encabezado inesperado en disponibilidades");
-
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.isBlank()) continue;
-                String[] t = line.split(",", -1);
-                String rut    = t[0].trim();
-                LocalDate f   = parseFechaISO(t[1]);
-                Bloque b      = parseBloqueFlexible(t[2]);
-                String area   = conArea ? t[3].trim() : "-";
-                boolean disp  = Boolean.parseBoolean(t[conArea ? 4 : 3].trim());
-
-                if (disp && f.equals(fechaSel) && b == bloqueSel) {
-                    // guardamos una sola entrada por rut (la primera que aparezca)
-                    candidatos.putIfAbsent(rut, area);
-                }
-            }
-        }
+        java.util.List<Enfermera> lista = enfSvc.filtrarDisponibles(fechaSel, bloqueSel);
 
         javax.swing.table.DefaultTableModel m = (javax.swing.table.DefaultTableModel) jTable1.getModel();
         m.setRowCount(0);
 
-        for (java.util.Map.Entry<String, String> entry : candidatos.entrySet()) {
-            String rut  = entry.getKey();
-            String area = entry.getValue();
-            Enfermera e = enfSvc.buscarPorRut(rut);
-            if (e == null) continue; // por si falta en memoria
-
-            if (!e.disponiblePara(fechaSel, bloqueSel)) continue;
-
-            m.addRow(new Object[]{ e.getRut(), e.getNombre(), area });
+        for (Enfermera e : lista) {
+            String area = e.areaPara(fechaSel, bloqueSel); 
+            m.addRow(new Object[]{ e.getRut(), e.getNombre(), area == null ? "-" : area });
         }
 
         if (m.getRowCount() == 0) {
@@ -115,8 +79,8 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
     } catch (Exception ex) {
         javax.swing.JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(),
                 "Filtrar", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
     }
-}
     private void exportar(){
     javax.swing.table.DefaultTableModel m = (javax.swing.table.DefaultTableModel) jTable1.getModel();
     int cols = m.getColumnCount();

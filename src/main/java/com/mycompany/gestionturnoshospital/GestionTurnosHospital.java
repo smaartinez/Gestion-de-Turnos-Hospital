@@ -15,6 +15,26 @@ public class GestionTurnosHospital {
     private static final EnfermeraService enfSvc = new EnfermeraService();   // catálogo de enfermeras
     private static final Hospital hospital = new Hospital("Hospital Demo");  // dueño de las áreas
 
+    private static java.nio.file.Path carpetaDatos; // carpeta elegida en "Importar"
+
+    public static void setCarpetaDatos(java.nio.file.Path p) {
+        carpetaDatos = p;
+    }
+
+    public static java.nio.file.Path getCarpetaDatos() {
+        return carpetaDatos;
+    }
+
+    /** Llama a CsvIO.saveAll si hay carpeta configurada. */
+    public static void persistIfPossible() {
+        if (carpetaDatos == null) return;
+        try {
+            CsvIO.saveAll(carpetaDatos, getEnfSvc(), getHospital());
+        } catch (Exception ex) {
+            ex.printStackTrace(); // o logger
+        }
+    }    
+    
     public static void main(String[] args) throws IOException {
         int opcion;
         do {
@@ -288,6 +308,7 @@ public class GestionTurnosHospital {
                     // registrar horas y consumir disponibilidad
                     if (e.registrarHoras(HORAS_POR_TURNO)) {
                         e.removeDisponibilidad(fecha, b); // evita reasignarla en el mismo bloque
+                        hospital.registrarTurno(e, a, fecha, b);
                         asignadas++;
                         System.out.printf("Asignado: %-12s -> %-12s [%s %s]%n",
                                 e.getNombre(), a.getNombre(), fecha, b);
@@ -352,7 +373,8 @@ public class GestionTurnosHospital {
         }
         sel.registrarHoras(HORAS_POR_TURNO);
         sel.removeDisponibilidad(fecha, bloque);
-
+        hospital.registrarTurno(sel, area, fecha, bloque);
+        
         System.out.printf("Asignado: %s -> %s [%s %s]%n",
                 sel.getNombre(), area.getNombre(), fecha, bloque);
 
@@ -516,4 +538,5 @@ public class GestionTurnosHospital {
         System.out.print("\n[Enter] para continuar...");
         br.readLine();
     }
+    
 }
