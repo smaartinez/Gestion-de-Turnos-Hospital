@@ -1,0 +1,16 @@
+id,nombre,cuposManana,cuposTarde,cuposNoche,skillsRequeridas
+1,UCI,5,6,5,Cardiologia;UCI
+2,Urgencias,4,6,4,Trauma;Emergencias
+3,Pediatria,2,2,4,Pediatria
+4,Neonatologia,3,2,2,Neonatologia;Pediatria
+5,Quirurgico,2,5,3,Quirurgico
+6,Oncologia,3,3,3,Oncologia;CuidadosPaliativos
+7,Traumatologia,2,4,2,Quirurgico
+8,Dialisis,2,3,2,Dialisis
+9,Cardiologia,2,4,2,UCI
+10,Infectologia,2,2,2,Infectologia
+11,Psiquiatria,2,2,3,Psiquiatria
+12,Geriatria,4,4,2,Geriatria;CuidadosPaliativos
+13,Recuperacion,3,3,3,UCI;Quirurgico
+14,Hospitalizacion,3,3,2,Oncologia;Cardiologia
+15,SalaMedica,3,3,4,Geriatria;Infectologia

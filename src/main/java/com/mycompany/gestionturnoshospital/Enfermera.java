@@ -132,5 +132,4 @@ public class Enfermera {
         return true;
     }
     public void resetHorasAcumuladas() { this.horasAcumuladas = 0; }
-    
 }

@@ -1,6 +1,7 @@
 package com.mycompany.gestionturnoshospital;
 
 import java.util.*;
+import java.time.LocalDate;
 
 public class EnfermeraService {
     private final List<Enfermera> store = new ArrayList<>();
@@ -49,4 +50,20 @@ public class EnfermeraService {
     public boolean indiceValido(int idx)      { return idx >= 0 && idx < store.size(); }
 
     public void clear() { store.clear(); indexByRut.clear(); }
+    
+    public List<Enfermera> filtrarDisponibles(LocalDate fecha, Bloque bloque){
+        List<Enfermera> salida = new ArrayList<>();
+        for(int i = 0 ; i < store.size(); i++){
+            Enfermera e = store.get(i);
+            List<Disponibilidad> ds = e.getDisponibilidades();
+            for (int j = 0 ; j < ds.size(); j++){
+                Disponibilidad d = ds.get(j);
+                if(d.getFecha().equals(fecha) && d.getBloque() == bloque && d.isDisponible()){
+                    salida.add(e);
+                    break;
+                }
+            }
+        }
+        return salida;    
+    }
 }

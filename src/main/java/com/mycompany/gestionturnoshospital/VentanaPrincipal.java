@@ -37,6 +37,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         btnAsignar = new javax.swing.JButton();
         btnCalendario = new javax.swing.JButton();
         btnConflictos = new javax.swing.JButton();
+        filtrarDisponibles = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -85,6 +86,13 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             }
         });
 
+        filtrarDisponibles.setText("Enfermeras Disponibles");
+        filtrarDisponibles.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                filtrarDisponiblesActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -102,6 +110,9 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                         .addComponent(btnImportar, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(btnGestionar, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap(118, Short.MAX_VALUE))
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(filtrarDisponibles)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -118,7 +129,9 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                 .addComponent(btnCalendario)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(btnConflictos)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 62, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(filtrarDisponibles)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 28, Short.MAX_VALUE)
                 .addComponent(btnSalir)
                 .addContainerGap())
         );
@@ -209,6 +222,10 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         if (header == null) return null;
         return header.replace("\uFEFF", "").trim();
     }
+    private void abrirDlgFiltrarDisponibles(){
+        new DlgFiltrarDisponibles(this, true, GestionTurnosHospital.getEnfSvc())
+                .setVisible(true);      
+    }
     
     private void btnConflictosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConflictosActionPerformed
         // TODO add your handling code here:
@@ -227,6 +244,9 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         dlg.setLocationRelativeTo(this);
         dlg.setVisible(true);
     }//GEN-LAST:event_btnGestionarActionPerformed
+
+    private void filtrarDisponiblesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_filtrarDisponiblesActionPerformed
+    abrirDlgFiltrarDisponibles();    abrirDlgFiltrarDisponibles();    }//GEN-LAST:event_filtrarDisponiblesActionPerformed
 
     /**
      * @param args the command line arguments
@@ -260,6 +280,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     private javax.swing.JButton btnGestionar;
     private javax.swing.JButton btnImportar;
     private javax.swing.JButton btnSalir;
+    private javax.swing.JButton filtrarDisponibles;
     private javax.swing.JLabel jLabel1;
     // End of variables declaration//GEN-END:variables
 }
