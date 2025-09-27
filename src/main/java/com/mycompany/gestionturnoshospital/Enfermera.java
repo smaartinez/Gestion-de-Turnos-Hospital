@@ -48,42 +48,59 @@ public class Enfermera {
     public void setNombre(String nombre) {
         if (nombre == null || nombre.isBlank()) throw new IllegalArgumentException("Nombre inválido");
         this.nombre = nombre.trim();
+        
+        GestionTurnosHospital.persistIfPossible();
     }
     public void setHorasMensualMax(int max) {
         if (max < 0) throw new IllegalArgumentException("Horas máximas negativas");
         if (horasAcumuladas > max) throw new IllegalStateException("Acumuladas superan el nuevo máximo");
         this.horasMensualMax = max;
+        
+        GestionTurnosHospital.persistIfPossible();
     }
 
     // (Opcionales para SIA1.3 estricta)
     public void setSkills(List<String> nuevas) {
         this.skills.clear();
         if (nuevas != null) for (String s : nuevas) addSkill(s);
+        
+        GestionTurnosHospital.persistIfPossible();
     }
     public void setDisponibilidad(List<Disponibilidad> lista) {
         this.disponibilidades.clear();
         if (lista != null) this.disponibilidades.addAll(lista);
+        
+        GestionTurnosHospital.persistIfPossible();
     }
     public void setHorasAcumuladas(int h) {
         if (h < 0) throw new IllegalArgumentException("Horas negativas");
         if (h > horasMensualMax) throw new IllegalArgumentException("Supera máximo mensual");
         this.horasAcumuladas = h;
+        
+        GestionTurnosHospital.persistIfPossible();
     }
 
     // ------------ Skills (con sobrecarga) ------------
     public boolean addSkill(String skill) {
         String s = normalizeSkill(skill);
         if (s.isEmpty()) return false;
-        if (!skills.contains(s)) { skills.add(s); return true; }
+        if (!skills.contains(s)) { skills.add(s); GestionTurnosHospital.persistIfPossible(); return true; }
         return false;
+        
     }
     // Sobrecarga: varargs
     public int addSkill(String... nuevas) {
         int c = 0;
         if (nuevas != null) for (String s : nuevas) if (addSkill(s)) c++;
+        if (c>0) GestionTurnosHospital.persistIfPossible();
         return c;
+        
     }
-    public boolean removeSkill(String skill) { return skills.remove(normalizeSkill(skill)); }
+    public boolean removeSkill(String skill) {
+        boolean removed = skills.remove(normalizeSkill(skill));
+        if (removed) GestionTurnosHospital.persistIfPossible();   
+        return removed;
+    }
     public boolean tieneSkill(String skill) { return skills.contains(normalizeSkill(skill)); }
     private String normalizeSkill(String s) { return (s == null) ? "" : s.trim(); }
 
@@ -92,7 +109,9 @@ public class Enfermera {
         if (fecha == null || bloque == null) throw new IllegalArgumentException("Fecha/bloque inválidos");
         int idx = indexDisponibilidad(fecha, bloque);
         Disponibilidad nueva = new Disponibilidad(fecha, bloque, disponible);
-        if (idx >= 0) disponibilidades.set(idx, nueva); else disponibilidades.add(nueva);
+        if (idx >= 0) disponibilidades.set(idx, nueva); 
+        else disponibilidades.add(nueva);
+        GestionTurnosHospital.persistIfPossible();
     }
     // Sobrecarga: por objeto
     public void setDisponibilidad(Disponibilidad d) {
@@ -107,7 +126,7 @@ public class Enfermera {
     
     public boolean removeDisponibilidad(LocalDate fecha, Bloque bloque) {
         int idx = indexDisponibilidad(fecha, bloque);
-        if (idx >= 0) { disponibilidades.remove(idx); return true; }
+        if (idx >= 0) { disponibilidades.remove(idx); GestionTurnosHospital.persistIfPossible(); return true; }
         return false;
     }
     public boolean disponiblePara(LocalDate fecha, Bloque bloque) {
@@ -129,7 +148,8 @@ public class Enfermera {
     public boolean registrarHoras(int horasTurno) {
         if (!puedeTomarHoras(horasTurno)) return false;
         this.horasAcumuladas += horasTurno;
+        GestionTurnosHospital.persistIfPossible(); 
         return true;
     }
-    public void resetHorasAcumuladas() { this.horasAcumuladas = 0; }
+    public void resetHorasAcumuladas() { this.horasAcumuladas = 0; GestionTurnosHospital.persistIfPossible();  }
 }

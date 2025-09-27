@@ -19,6 +19,16 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     public VentanaPrincipal() {
         initComponents();
         this.setLocationRelativeTo(null);
+        
+        java.nio.file.Path last = AppConfig.loadLastFolder();
+        if (last != null) {
+            GestionTurnosHospital.setCarpetaDatos(last);
+            try {
+                CsvIO.loadAll(last, GestionTurnosHospital.getEnfSvc(), GestionTurnosHospital.getHospital());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -140,85 +150,91 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnSalirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSalirActionPerformed
+        GestionTurnosHospital.persistIfPossible();
         System.exit(0);
     }//GEN-LAST:event_btnSalirActionPerformed
 
     private void btnImportarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportarActionPerformed
-        
-        try {
-            javax.swing.JFileChooser fc = new javax.swing.JFileChooser();
-            fc.setDialogTitle("Selecciona la carpeta que contiene enfermeras/areas/disponibilidades");
-            fc.setFileSelectionMode(javax.swing.JFileChooser.DIRECTORIES_ONLY);
-            int r = fc.showOpenDialog(this);
-            if (r != javax.swing.JFileChooser.APPROVE_OPTION) return;
+    try {
+        javax.swing.JFileChooser fc = new javax.swing.JFileChooser();
+        fc.setDialogTitle("Selecciona la carpeta que contiene enfermeras/areas/disponibilidades");
+        fc.setFileSelectionMode(javax.swing.JFileChooser.DIRECTORIES_ONLY);
+        int r = fc.showOpenDialog(this);
+        if (r != javax.swing.JFileChooser.APPROVE_OPTION) return;
 
-            java.io.File dir = fc.getSelectedFile();
-            java.nio.file.Path folder = dir.toPath();
+        java.io.File dir = fc.getSelectedFile();
+        java.nio.file.Path folder = dir.toPath();
 
-            java.util.List<java.nio.file.Path> csvs = new java.util.ArrayList<>();
-            try (java.util.stream.Stream<java.nio.file.Path> st = java.nio.file.Files.list(folder)) {
-                st.filter(p -> p.getFileName().toString().toLowerCase().endsWith(".csv"))
-                  .forEach(csvs::add);
-            }
-            if (csvs.isEmpty()) {
-                javax.swing.JOptionPane.showMessageDialog(this, "No se encontraron .csv en la carpeta.",
-                        "Importar datos", javax.swing.JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            java.nio.file.Path enfCsv = null, areaCsv = null, dispCsv = null;
-
-            for (java.nio.file.Path p : csvs) {
-                String header;
-                try (java.io.BufferedReader br = java.nio.file.Files.newBufferedReader(p, java.nio.charset.StandardCharsets.UTF_8)) {
-                    header = br.readLine();
-                }
-                if (header == null) continue;
-
-                String h = sanitizeHeader(header).toLowerCase();
-                // OJO: todo en minúsculas al comparar:
-                if (h.equals("rut,nombre,horasmensualmax,skills") && enfCsv == null) {
-                    enfCsv = p;
-                } else if (h.equals("id,nombre,cuposmanana,cupostarde,cuposnoche,skillsrequeridas") && areaCsv == null) {
-                    areaCsv = p;
-                } else if ((h.equals("rut,fecha,bloque,disponible") || h.equals("rut,fecha,bloque,area,disponible")) && dispCsv == null) {
-                    dispCsv = p;
-                }
-            }
-
-            if (enfCsv == null || areaCsv == null || dispCsv == null) {
-                javax.swing.JOptionPane.showMessageDialog(this,
-                    "Faltan CSV requeridos:\n" +
-                    (enfCsv == null ? " - enfermeras (rut,nombre,horasMensualMax,skills)\n" : "") +
-                    (areaCsv == null ? " - areas (id,nombre,cuposManana,cuposTarde,cuposNoche,skillsRequeridas)\n" : "") +
-                    (dispCsv == null ? " - disponibilidades (rut,fecha,bloque[,area],disponible)\n" : ""),
-                    "Importar datos", javax.swing.JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            EnfermeraService enfSvc = GestionTurnosHospital.getEnfSvc();
-            Hospital hospital = GestionTurnosHospital.getHospital();
-
-            DlgImportarDatos.importEnfermeras(enfCsv, enfSvc);
-            DlgImportarDatos.importAreas(areaCsv, hospital);
-            DlgImportarDatos.importDisponibilidades(dispCsv, enfSvc);
-            GestionTurnosHospital.setUltimoCsvDisponibilidades(dispCsv);
-            
-
-
-            javax.swing.JOptionPane.showMessageDialog(this,
-                "Importación completada:\n" +
-                "Enfermeras: " + enfSvc.count() + "\n" +
-                "Áreas: " + hospital.getAreas().size() + "\n" +
-                "Disponibilidades: OK",
-                "Importar datos", javax.swing.JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (Exception ex) {
-            logger.log(java.util.logging.Level.SEVERE, "Error importando CSV", ex);
-            javax.swing.JOptionPane.showMessageDialog(this,
-                "Error al importar: " + ex.getMessage(),
-                "Importar datos", javax.swing.JOptionPane.ERROR_MESSAGE);
+        java.util.List<java.nio.file.Path> csvs = new java.util.ArrayList<>();
+        try (java.util.stream.Stream<java.nio.file.Path> st = java.nio.file.Files.list(folder)) {
+            st.filter(p -> p.getFileName().toString().toLowerCase().endsWith(".csv"))
+              .forEach(csvs::add);
         }
+        if (csvs.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "No se encontraron .csv en la carpeta.",
+                    "Importar datos", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        java.nio.file.Path enfCsv = null, areaCsv = null, dispCsv = null;
+
+        for (java.nio.file.Path p : csvs) {
+            String header;
+            try (java.io.BufferedReader br = java.nio.file.Files.newBufferedReader(p, java.nio.charset.StandardCharsets.UTF_8)) {
+                header = br.readLine();
+            }
+            if (header == null) continue;
+
+            String h = sanitizeHeader(header).toLowerCase();
+            if (h.equals("rut,nombre,horasmensualmax,skills") && enfCsv == null) {
+                enfCsv = p;
+            } else if (h.equals("id,nombre,cuposmanana,cupostarde,cuposnoche,skillsrequeridas") && areaCsv == null) {
+                areaCsv = p;
+            } else if ((h.equals("rut,fecha,bloque,disponible") || h.equals("rut,fecha,bloque,area,disponible")) && dispCsv == null) {
+                dispCsv = p;
+            }
+        }
+
+        if (enfCsv == null || areaCsv == null || dispCsv == null) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                "Faltan CSV requeridos:\n" +
+                (enfCsv == null ? " - enfermeras (rut,nombre,horasMensualMax,skills)\n" : "") +
+                (areaCsv == null ? " - areas (id,nombre,cuposManana,cuposTarde,cuposNoche,skillsRequeridas)\n" : "") +
+                (dispCsv == null ? " - disponibilidades (rut,fecha,bloque[,area],disponible)\n" : ""),
+                "Importar datos", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        EnfermeraService enfSvc = GestionTurnosHospital.getEnfSvc();
+        Hospital hospital = GestionTurnosHospital.getHospital();
+
+        // Importas desde los CSV existentes
+        DlgImportarDatos.importEnfermeras(enfCsv, enfSvc);
+        DlgImportarDatos.importAreas(areaCsv, hospital);
+        DlgImportarDatos.importDisponibilidades(dispCsv, enfSvc);
+        GestionTurnosHospital.setUltimoCsvDisponibilidades(dispCsv);
+
+        // ====== ⬅️ NUEVO: persistencia y recordar carpeta ======
+        GestionTurnosHospital.setCarpetaDatos(folder);                           // ⬅️ NUEVO
+        AppConfig.saveLastFolder(folder);                                        // ⬅️ NUEVO
+        CsvIO.saveAll(folder, GestionTurnosHospital.getEnfSvc(), hospital);      // ⬅️ NUEVO
+        // =======================================================
+
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Importación completada:\n" +
+            "Enfermeras: " + enfSvc.count() + "\n" +
+            "Áreas: " + hospital.getAreas().size() + "\n" +
+            "Disponibilidades: OK",
+            "Importar datos", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+    } catch (Exception ex) {
+        logger.log(java.util.logging.Level.SEVERE, "Error importando CSV", ex);
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Error al importar: " + ex.getMessage(),
+            "Importar datos", javax.swing.JOptionPane.ERROR_MESSAGE);
+    }
+        
+        
     }//GEN-LAST:event_btnImportarActionPerformed
 
     private static String sanitizeHeader(String header) {
@@ -237,7 +253,85 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_btnConflictosActionPerformed
 
     private void btnCalendarioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCalendarioActionPerformed
-        // TODO add your handling code here:
+
+DlgVisualizarCalendario dlg = new DlgVisualizarCalendario(this, true);
+
+    Hospital hospital = GestionTurnosHospital.getHospital();
+    EnfermeraService enfSvc = GestionTurnosHospital.getEnfSvc();
+
+    java.util.List<String> nombresAreas = new java.util.ArrayList<>();
+    for (Area a : hospital.getAreas()) nombresAreas.add(a.getNombre());
+    dlg.setAreas(nombresAreas); // si no tienes áreas importadas, se verá solo "(Todas)"
+
+    java.util.List<String> nombresEnfs = new java.util.ArrayList<>();
+    for (Enfermera e : enfSvc.listar()) nombresEnfs.add(e.getNombre());
+    dlg.setEnfermeras(nombresEnfs); // idem
+
+
+    dlg.setScheduleProvider((desde, hasta, area, enfermera) -> {
+        java.util.List<DlgVisualizarCalendario.ScheduleItem> out = new java.util.ArrayList<>();
+
+        for (Enfermera e : enfSvc.listar()) {
+            // filtrar por enfermera si el combo eligió una
+            if (enfermera != null && !enfermera.equals(e.getNombre())) continue;
+
+            // Recorrer disponibilidades que vienen del CSV
+            for (Disponibilidad d : e.getDisponibilidades()) {
+                java.time.LocalDate ld = d.getFecha();
+
+                // Convertir bloque a rango horario 
+                java.time.LocalDateTime ini, fin;
+                switch (d.getBloque()) {
+                    case MANANA:
+                        ini = ld.atTime(8, 0);
+                        fin = ld.atTime(16, 0);
+                        break;
+                    case TARDE:
+                        ini = ld.atTime(16, 0);
+                        fin = ld.plusDays(1).atTime(0, 0); // 16–24
+                        break;
+                    case NOCHE:
+                        ini = ld.atTime(0, 0);
+                        fin = ld.atTime(8, 0); // 00–08
+                        break;
+                    default:
+                        continue;
+                }
+
+                // Cruzar con el rango de la vista (día/semana/mes)
+                if (ini.isAfter(hasta) || fin.isBefore(desde)) continue;
+
+   
+                String areaDisp = null; 
+                // Si tu clase Disponibilidad expone algo como d.getAreaNombre() o d.getArea():
+                // areaDisp = d.getAreaNombre();  // o d.getArea()
+
+                // Respetar filtro de área solo si podemos saberla
+                if (area != null) {
+                    if (areaDisp == null || !area.equals(areaDisp)) continue;
+                }
+
+                // Estado visual: disponible -> PENDIENTE; no disponible -> CONFLICTO
+                DlgVisualizarCalendario.Estado est =
+                        d.isDisponible() ? DlgVisualizarCalendario.Estado.PENDIENTE
+                                         : DlgVisualizarCalendario.Estado.CONFLICTO;
+
+                out.add(new DlgVisualizarCalendario.ScheduleItem(
+                        ini, fin,
+                        areaDisp,                    // área (puede ser null si no tienes esa columna)
+                        e.getNombre(),               // enfermera
+                        est,
+                        "Disponibilidad " + d.getBloque().name()
+                ));
+            }
+        }
+
+        // Ordenar por inicio para que se vea prolijo
+        out.sort(java.util.Comparator.comparing(si -> si.inicio));
+        return out;
+    });
+
+    dlg.setVisible(true);         
     }//GEN-LAST:event_btnCalendarioActionPerformed
 
     private void btnAsignarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAsignarActionPerformed
