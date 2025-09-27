@@ -26,7 +26,8 @@ public class DlgConflictos extends javax.swing.JDialog {
     private final EnfermeraService enfSvc;
 
     // Top filters
-    private JTextField txtFecha;
+    private JComboBox<String> cboFecha;   // fechas válidas
+    private JButton btnRefrescarFechas;   // recargar fechas
     private JComboBox<Bloque> cboBloque;
     private JCheckBox chkTodasAreas;
     private JList<Area> lstAreas;
@@ -58,8 +59,7 @@ public class DlgConflictos extends javax.swing.JDialog {
     private JTable tblElegiblesArea;
 
     // Bottom buttons
-    private JButton btnExportar;
-    private JButton btnImprimir;
+ 
     private JButton btnCerrar;
 
     // Constantes
@@ -70,6 +70,9 @@ public class DlgConflictos extends javax.swing.JDialog {
         this.hospital = hospital;
         this.enfSvc = enfSvc;
         buildUI();
+        cargarFechasValidas();
+        if (cboBloque.getItemCount() > 0) cboBloque.setSelectedItem(Bloque.MANANA);
+        if (cboFecha.getItemCount() > 0) cboFecha.setSelectedIndex(0);
         pack();
         setLocationRelativeTo(owner);
         setMinimumSize(new Dimension(900, 600));
@@ -90,10 +93,16 @@ public class DlgConflictos extends javax.swing.JDialog {
         c.insets = new Insets(4,4,4,4);
         c.gridy = 0; c.gridx = 0; c.anchor = GridBagConstraints.WEST;
 
-        p.add(new JLabel("Fecha (YYYY-MM-DD):"), c);
+        p.add(new JLabel("Fecha:"), c);
         c.gridx++;
-        txtFecha = new JTextField(10);
-        p.add(txtFecha, c);
+        cboFecha = new JComboBox<>();
+        cboFecha.setPrototypeDisplayValue("YYYY-MM-DD");
+        p.add(cboFecha, c);
+
+        c.gridx++;
+        btnRefrescarFechas = new JButton("↻");
+        btnRefrescarFechas.setToolTipText("Recargar fechas válidas desde disponibilidades");
+        p.add(btnRefrescarFechas, c);
 
         c.gridx++;
         p.add(new JLabel("Bloque:"), c);
@@ -224,11 +233,8 @@ public class DlgConflictos extends javax.swing.JDialog {
 
     private JPanel buildBottomBar() {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        btnExportar = new JButton("Exportar CSV…");
-        btnImprimir = new JButton("Imprimir…");
+        
         btnCerrar   = new JButton("Cerrar");
-        p.add(btnExportar);
-        p.add(btnImprimir);
         p.add(btnCerrar);
         return p;
     }
@@ -249,10 +255,15 @@ public class DlgConflictos extends javax.swing.JDialog {
         chkFiltrarSkillsArea.addActionListener(e -> analyseDetalle());
         chkFiltrarHorasArea.addActionListener(e -> analyseDetalle());
         txtBuscarNombre.addCaretListener(e -> analyseDetalle());
+
+        btnRefrescarFechas.addActionListener(e -> {
+            cargarFechasValidas();
+            if (cboFecha.getItemCount() > 0) cboFecha.setSelectedIndex(0);
+        });
     }
 
     private void clearFilters() {
-        txtFecha.setText("");
+        cboFecha.removeAllItems();
         cboBloque.setSelectedIndex(0);
         chkTodasAreas.setSelected(true);
         lstAreas.clearSelection();
@@ -263,7 +274,6 @@ public class DlgConflictos extends javax.swing.JDialog {
         chkDedupe.setSelected(false);
         lblUnicas.setText("Únicas: 0");
 
-        // limpiar tablas
         ((DefaultTableModel)tblCobertura.getModel()).setRowCount(0);
         ((DefaultTableModel)tblHoras.getModel()).setRowCount(0);
         ((DefaultTableModel)tblElegiblesArea.getModel()).setRowCount(0);
@@ -272,24 +282,43 @@ public class DlgConflictos extends javax.swing.JDialog {
         lblElegiblesTotales.setText("Elegibles (sin dedupe): 0");
     }
 
+    private void cargarFechasValidas() {
+        java.util.Set<LocalDate> fechas = new java.util.TreeSet<>();
+        for (Enfermera e : enfSvc.listar()) {
+            for (Disponibilidad d : e.getDisponibilidades()) {
+                if (d != null && d.getFecha() != null) {
+                    fechas.add(d.getFecha());
+                }
+            }
+        }
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+        for (LocalDate f : fechas) {
+            model.addElement(f.toString());
+        }
+        cboFecha.setModel(model);
+    }
+
     private LocalDate readFechaOrWarn() {
+        Object sel = cboFecha.getSelectedItem();
+        if (sel == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione una fecha válida.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return null;
+        }
         try {
-            return LocalDate.parse(txtFecha.getText().trim());
+            return LocalDate.parse(sel.toString().trim());
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Fecha inválida. Use YYYY-MM-DD.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Fecha inválida.", "Error", JOptionPane.ERROR_MESSAGE);
             return null;
         }
     }
 
-    // === Lógica de análisis ===
-
+    
     private void analyseAll() {
         LocalDate fecha = readFechaOrWarn();
         if (fecha == null) return;
         Bloque bloque = (Bloque) cboBloque.getSelectedItem();
         lblContexto.setText("Fecha: " + fecha + " — Bloque: " + bloque);
 
-        // Áreas a considerar
         List<Area> areas = new ArrayList<>();
         if (chkTodasAreas.isSelected()) {
             areas.addAll(hospital.getAreas());
@@ -301,10 +330,8 @@ public class DlgConflictos extends javax.swing.JDialog {
             return;
         }
 
-        // Disponibles base para el bloque
         List<Enfermera> baseDisponibles = enfSvc.filtrarDisponibles(fecha, bloque);
 
-        // Tabla cobertura
         DefaultTableModel m = (DefaultTableModel) tblCobertura.getModel();
         m.setRowCount(0);
         int totalCupos = 0;
@@ -327,10 +354,8 @@ public class DlgConflictos extends javax.swing.JDialog {
         lblElegiblesTotales.setText("Elegibles (sin dedupe): " + totalElegiblesNoDedupe);
         lblUnicas.setText("Únicas: " + setUnicas.size());
 
-        // Tab Horas
         analyseHoras();
 
-        // Tab Detalle: seleccionar primera área por defecto
         if (!areas.isEmpty()) {
             lstAreasDetalle.setListData(areas.toArray(new Area[0]));
             lstAreasDetalle.setSelectedIndex(0);
@@ -358,7 +383,6 @@ public class DlgConflictos extends javax.swing.JDialog {
     }
 
     private void refreshUnicasLabel() {
-        // Re-ejecutar el análisis para consistencia
         DefaultTableModel m = (DefaultTableModel) tblCobertura.getModel();
         if (m.getRowCount() == 0) return;
         analyseAll();
@@ -389,18 +413,13 @@ public class DlgConflictos extends javax.swing.JDialog {
         Area area = lstAreasDetalle.getSelectedValue();
         if (area == null) return;
 
-        LocalDate fecha;
-        try {
-            fecha = LocalDate.parse(txtFecha.getText().trim());
-        } catch (DateTimeParseException ex) {
-            return;
-        }
+        LocalDate fecha = readFechaOrWarn();
+        if (fecha == null) return;
         Bloque bloque = (Bloque) cboBloque.getSelectedItem();
 
         List<Enfermera> disponibles = enfSvc.filtrarDisponibles(fecha, bloque);
         List<Enfermera> cand = filtrarCandidatas(disponibles, area);
 
-        // filtros adicionales de esta pestaña
         boolean exigirSkills = chkFiltrarSkillsArea.isSelected();
         boolean exigirHoras  = chkFiltrarHorasArea.isSelected();
         String filtroNombre = txtBuscarNombre.getText().trim().toLowerCase(Locale.ROOT);
@@ -418,12 +437,11 @@ public class DlgConflictos extends javax.swing.JDialog {
 
             String skills = String.valueOf(e.getSkills());
             String horas  = e.getHorasAcumuladas() + "/" + e.getHorasMensualMax();
-            boolean disponible = e.puedeTomarHoras(HORAS_POR_TURNO); // aproximación
+            boolean disponible = e.puedeTomarHoras(HORAS_POR_TURNO);
             md.addRow(new Object[]{ i++, e.getNombre(), skills, horas, disponible ? "Sí" : "No" });
         }
     }
 
-    // Helper: cupos por bloque
     private int cuposDe(Area a, Bloque b) {
         switch (b) {
             case MANANA: return a.getCuposManana();

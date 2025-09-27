@@ -231,7 +231,8 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     }
     
     private void btnConflictosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConflictosActionPerformed
-        DlgConflictos dlg = new DlgConflictos(this, GestionTurnosHospital.getHospital(),GestionTurnosHospital.getEnfSvc());
+
+        DlgConflictos dlg = new DlgConflictos(this, GestionTurnosHospital.getHospital(), GestionTurnosHospital.getEnfSvc());
         dlg.setVisible(true);
     }//GEN-LAST:event_btnConflictosActionPerformed
 
