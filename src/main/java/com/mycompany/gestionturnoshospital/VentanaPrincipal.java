@@ -20,15 +20,15 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         initComponents();
         this.setLocationRelativeTo(null);
         
-        java.nio.file.Path last = AppConfig.loadLastFolder();
-        if (last != null) {
-            GestionTurnosHospital.setCarpetaDatos(last);
-            try {
-                CsvIO.loadAll(last, GestionTurnosHospital.getEnfSvc(), GestionTurnosHospital.getHospital());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+//        java.nio.file.Path last = AppConfig.loadLastFolder();
+//        if (last != null) {
+//            GestionTurnosHospital.setCarpetaDatos(last);
+//            try {
+//                CsvIO.loadAll(last, GestionTurnosHospital.getEnfSvc(), GestionTurnosHospital.getHospital());
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
     }
 
     /**
@@ -208,17 +208,12 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         EnfermeraService enfSvc = GestionTurnosHospital.getEnfSvc();
         Hospital hospital = GestionTurnosHospital.getHospital();
 
-        // Importas desde los CSV existentes
         DlgImportarDatos.importEnfermeras(enfCsv, enfSvc);
         DlgImportarDatos.importAreas(areaCsv, hospital);
         DlgImportarDatos.importDisponibilidades(dispCsv, enfSvc);
+
         GestionTurnosHospital.setUltimoCsvDisponibilidades(dispCsv);
 
-        // ====== ⬅️ NUEVO: persistencia y recordar carpeta ======
-        GestionTurnosHospital.setCarpetaDatos(folder);                           // ⬅️ NUEVO
-        AppConfig.saveLastFolder(folder);                                        // ⬅️ NUEVO
-        CsvIO.saveAll(folder, GestionTurnosHospital.getEnfSvc(), hospital);      // ⬅️ NUEVO
-        // =======================================================
 
         javax.swing.JOptionPane.showMessageDialog(this,
             "Importación completada:\n" +

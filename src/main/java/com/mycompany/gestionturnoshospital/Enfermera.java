@@ -27,6 +27,7 @@ public class Enfermera {
         this.horasMensualMax = horasMensualMax;
         this.horasAcumuladas = 0;
     }
+    
 
     public Enfermera(String nombre, String rut) {
         this(nombre, rut, new ArrayList<>(), 160);
@@ -105,23 +106,28 @@ public class Enfermera {
     private String normalizeSkill(String s) { return (s == null) ? "" : s.trim(); }
 
     // ------------ Disponibilidad (con sobrecarga) ------------
-    public void setDisponibilidad(LocalDate fecha, Bloque bloque, boolean disponible) {
-        if (fecha == null || bloque == null) throw new IllegalArgumentException("Fecha/bloque inválidos");
-        int idx = indexDisponibilidad(fecha, bloque);
-        Disponibilidad nueva = new Disponibilidad(fecha, bloque, disponible);
-        if (idx >= 0) disponibilidades.set(idx, nueva); 
-        else disponibilidades.add(nueva);
-        GestionTurnosHospital.persistIfPossible();
+    public void setDisponibilidad(LocalDate fecha, Bloque bloque, boolean disponible, String area) {
+    if (fecha == null || bloque == null) throw new IllegalArgumentException("Fecha/bloque inválidos");
+    int idx = indexDisponibilidad(fecha, bloque);
+    Disponibilidad nueva = new Disponibilidad(fecha, bloque, area, disponible);
+    if (idx >= 0) disponibilidades.set(idx, nueva);
+    else disponibilidades.add(nueva);
+    GestionTurnosHospital.persistIfPossible();
     }
-    // Sobrecarga: por objeto
+
     public void setDisponibilidad(Disponibilidad d) {
         if (d == null) throw new IllegalArgumentException("Disponibilidad nula");
-        setDisponibilidad(d.getFecha(), d.getBloque(), d.isDisponible());
+        int idx = indexDisponibilidad(d.getFecha(), d.getBloque());
+        if (idx >= 0) disponibilidades.set(idx, d);
+        else disponibilidades.add(d);
+        GestionTurnosHospital.persistIfPossible();
     }
-    
+    public void setDisponibilidad(LocalDate fecha, Bloque bloque, boolean disponible) {
+    setDisponibilidad(fecha, bloque, disponible, null);
+    }
+
     public void agregarDisponibilidad(Disponibilidad d) {
-        if (d == null) throw new IllegalArgumentException("Disponibilidad nula");
-        setDisponibilidad(d.getFecha(), d.getBloque(), d.isDisponible());
+        setDisponibilidad(d); 
     }
     
     public boolean removeDisponibilidad(LocalDate fecha, Bloque bloque) {
@@ -140,6 +146,14 @@ public class Enfermera {
         }
         return -1;
     }
+    public String areaPara(LocalDate fecha, Bloque bloque) {
+    for (Disponibilidad d : disponibilidades) {
+        if (d.getFecha().equals(fecha) && d.getBloque() == bloque) {
+            return d.getArea(); // suponiendo que Disponibilidad tiene un campo area
+        }
+    }
+    return null;
+}
 
     // ------------ Horas ------------
     public boolean puedeTomarHoras(int horasTurno) {
