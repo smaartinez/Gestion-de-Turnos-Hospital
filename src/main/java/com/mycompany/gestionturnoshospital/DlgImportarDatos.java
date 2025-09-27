@@ -291,14 +291,20 @@ public class DlgImportarDatos extends javax.swing.JDialog {
                 List<String> t = splitCsvLine(line);
                 String rut      = t.get(0).trim();
                 LocalDate fecha = LocalDate.parse(t.get(1).trim());
-                Bloque bloque   = Bloque.valueOf(t.get(2).trim().toUpperCase());
+                Bloque bloque = parseBloqueFlexible(t.get(2));
                 boolean disp    = Boolean.parseBoolean(t.get(tieneArea ? 4 : 3).trim());
                 Enfermera e = svc.buscarPorRut(rut);
                 if (e != null) {
                     e.agregarDisponibilidad(new Disponibilidad(fecha, bloque, disp));
                 }
             }
+            GestionTurnosHospital.setUltimoCsvDisponibilidades(csv);
         }
+    }
+    private static Bloque parseBloqueFlexible(String s) {
+    String x = s.trim().toUpperCase();
+    if (x.equals("MAÑANA")) x = "MANANA";
+    return Bloque.valueOf(x);
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEnfermeras;

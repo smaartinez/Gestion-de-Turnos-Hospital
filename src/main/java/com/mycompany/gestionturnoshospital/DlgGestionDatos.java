@@ -4,6 +4,9 @@
  */
 package com.mycompany.gestionturnoshospital;
 import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
+
+
 
 /**
  *
@@ -140,7 +143,10 @@ public class DlgGestionDatos extends javax.swing.JDialog {
     }//GEN-LAST:event_btnEnfermerasActionPerformed
 
     private void btnAreasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAreasActionPerformed
-        // TODO add your handling code here:
+        java.awt.Window parent = SwingUtilities.getWindowAncestor(this);
+        DlgGestionAreas dlg = new DlgGestionAreas((java.awt.Frame) parent, true, GestionTurnosHospital.getHospital());
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
     }//GEN-LAST:event_btnAreasActionPerformed
 
     private void btnCerrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCerrarActionPerformed

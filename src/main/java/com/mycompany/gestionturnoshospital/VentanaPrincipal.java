@@ -202,6 +202,9 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             DlgImportarDatos.importEnfermeras(enfCsv, enfSvc);
             DlgImportarDatos.importAreas(areaCsv, hospital);
             DlgImportarDatos.importDisponibilidades(dispCsv, enfSvc);
+            GestionTurnosHospital.setUltimoCsvDisponibilidades(dispCsv);
+            
+
 
             javax.swing.JOptionPane.showMessageDialog(this,
                 "Importación completada:\n" +
@@ -236,7 +239,8 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_btnCalendarioActionPerformed
 
     private void btnAsignarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAsignarActionPerformed
-        // TODO add your handling code here:
+        new DlgAsignarTurnos(this,true,GestionTurnosHospital.getEnfSvc(),GestionTurnosHospital.getHospital())
+        .setVisible(true);
     }//GEN-LAST:event_btnAsignarActionPerformed
 
     private void btnGestionarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGestionarActionPerformed
@@ -246,7 +250,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     }//GEN-LAST:event_btnGestionarActionPerformed
 
     private void filtrarDisponiblesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_filtrarDisponiblesActionPerformed
-    abrirDlgFiltrarDisponibles();    abrirDlgFiltrarDisponibles();    }//GEN-LAST:event_filtrarDisponiblesActionPerformed
+    abrirDlgFiltrarDisponibles();    }//GEN-LAST:event_filtrarDisponiblesActionPerformed
 
     /**
      * @param args the command line arguments

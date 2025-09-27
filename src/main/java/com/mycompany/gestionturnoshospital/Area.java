@@ -30,4 +30,11 @@ public class Area {
     public void setCuposManana(int v) { this.cuposManana = v; }
     public void setCuposTarde(int v) { this.cuposTarde = v; }
     public void setCuposNoche(int v) { this.cuposNoche = v; }
+    public void setSkillsRequeridas(List<String> skills) {
+    if (skills == null) {
+        this.skillsRequeridas = new ArrayList<>();
+    } else {
+        this.skillsRequeridas = new ArrayList<>(skills); 
+    }
+    }
 }

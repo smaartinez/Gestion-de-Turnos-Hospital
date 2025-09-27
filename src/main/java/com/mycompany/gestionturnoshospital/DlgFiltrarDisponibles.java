@@ -34,11 +34,10 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
     }
     private void configurarTabla(){
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
-        new Object[][]{},
-        new String[]{"RUT", "Nombre"}
-        
+            new Object[][]{},
+            new String[]{"RUT", "Nombre", "Área"}
         ){
-            @Override public boolean isCellEditable(int r, int c) {return false; }
+            @Override public boolean isCellEditable(int r, int c) { return false; }
         });
     }
     private void cargarBloques(){
@@ -50,45 +49,110 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
         jButton1.addActionListener(e -> buscar());
         jButton2.addActionListener(e -> exportar());
     }
-    private void buscar(){
-        try{
-            java.time.LocalDate fecha = java.time.LocalDate.parse(jTextField1.getText().trim());
-            Bloque bloque = Bloque.valueOf((String) jComboBox1.getSelectedItem());
-            java.util.List<Enfermera> lista = enfSvc.filtrarDisponibles(fecha, bloque);
-            javax.swing.table.DefaultTableModel m = (javax.swing.table.DefaultTableModel) jTable1.getModel();
-            m.setRowCount(0);
-            for (int i = 0 ; i< lista.size() ; i++){
-                Enfermera e = lista.get(i);
-                m.addRow(new Object[]{e.getRut(), e.getNombre()});
-            }
-            if (lista.isEmpty()){
-                javax.swing.JOptionPane.showMessageDialog(this,"Sin resultados para esa fecha/bloque.");
-            }
-            }catch (Exception ex){
-                javax.swing.JOptionPane.showMessageDialog(this, "Error :" + ex.getMessage(), "Filtrar", javax.swing.JOptionPane.ERROR_MESSAGE);
-            }        
+    private static Bloque parseBloqueFlexible(String s) {
+    return Bloque.valueOf(s.trim().toUpperCase().replace('Ñ','N')); // MANANA | TARDE | NOCHE
     }
-    private void exportar(){
-        javax.swing.table.DefaultTableModel m = (javax.swing.table.DefaultTableModel) jTable1.getModel();
-        if (m.getRowCount() == 0){
-            javax.swing.JOptionPane.showMessageDialog(this, "No hay resultados para exportar.");
+
+
+    private static LocalDate parseFechaISO(String s) {
+        return java.time.LocalDate.parse(s.trim()); // yyyy-MM-dd
+    }
+
+    private void buscar() {
+    try {
+        LocalDate fechaSel = java.time.LocalDate.parse(jTextField1.getText().trim());
+        Bloque bloqueSel = parseBloqueFlexible((String) jComboBox1.getSelectedItem());
+
+        java.nio.file.Path csv = GestionTurnosHospital.getUltimoCsvDisponibilidades();
+        if (csv == null) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Primero importa disponibilidades.csv");
             return;
         }
-        javax.swing.JFileChooser fc = new javax.swing.JFileChooser();
-        fc.setDialogTitle("Guardar reporte .txt");
-        fc.setSelectedFile(new java.io.File("reporte_disponibles.txt"));
-        if (fc.showSaveDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION)return;
-        
-        java.nio.file.Path destino = fc.getSelectedFile().toPath();
-        try(java.io.BufferedWriter bw = java.nio.file.Files.newBufferedWriter(destino, java.nio.charset.StandardCharsets.UTF_8)){
-            bw.write("RUT\tNombre"); bw.newLine();
-            for(int i = 0; i < m.getRowCount(); i++){
-                bw.write(m.getValueAt(i,0) + "\t" + m.getValueAt(i,1)); bw.newLine();
+
+        java.util.Map<String, String> candidatos = new java.util.LinkedHashMap<>();
+        try (java.io.BufferedReader br = java.nio.file.Files.newBufferedReader(csv, java.nio.charset.StandardCharsets.UTF_8)) {
+            String header = br.readLine();
+            if (header == null) throw new RuntimeException("CSV disponibilidades vacío");
+            String h = header.trim().toLowerCase();
+            boolean conArea = h.equals("rut,fecha,bloque,area,disponible");
+            boolean sinArea = h.equals("rut,fecha,bloque,disponible");
+            if (!conArea && !sinArea) throw new RuntimeException("Encabezado inesperado en disponibilidades");
+
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.isBlank()) continue;
+                String[] t = line.split(",", -1);
+                String rut    = t[0].trim();
+                LocalDate f   = parseFechaISO(t[1]);
+                Bloque b      = parseBloqueFlexible(t[2]);
+                String area   = conArea ? t[3].trim() : "-";
+                boolean disp  = Boolean.parseBoolean(t[conArea ? 4 : 3].trim());
+
+                if (disp && f.equals(fechaSel) && b == bloqueSel) {
+                    // guardamos una sola entrada por rut (la primera que aparezca)
+                    candidatos.putIfAbsent(rut, area);
+                }
             }
-        }catch (java.io.IOException ex){
-            javax.swing.JOptionPane.showMessageDialog(this, "No se pudo escribir:\n" + ex.getMessage(), "Exportar", javax.swing.JOptionPane.ERROR_MESSAGE);
-            return;              
         }
+
+        javax.swing.table.DefaultTableModel m = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+        m.setRowCount(0);
+
+        for (java.util.Map.Entry<String, String> entry : candidatos.entrySet()) {
+            String rut  = entry.getKey();
+            String area = entry.getValue();
+            Enfermera e = enfSvc.buscarPorRut(rut);
+            if (e == null) continue; // por si falta en memoria
+
+            if (!e.disponiblePara(fechaSel, bloqueSel)) continue;
+
+            m.addRow(new Object[]{ e.getRut(), e.getNombre(), area });
+        }
+
+        if (m.getRowCount() == 0) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Sin resultados para esa fecha/bloque.");
+        }
+    } catch (Exception ex) {
+        javax.swing.JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(),
+                "Filtrar", javax.swing.JOptionPane.ERROR_MESSAGE);
+    }
+}
+    private void exportar(){
+    javax.swing.table.DefaultTableModel m = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+    int cols = m.getColumnCount();
+    if (m.getRowCount() == 0){
+        javax.swing.JOptionPane.showMessageDialog(this, "No hay resultados para exportar.");
+        return;
+    }
+    javax.swing.JFileChooser fc = new javax.swing.JFileChooser();
+    fc.setDialogTitle("Guardar reporte .txt");
+    fc.setSelectedFile(new java.io.File("reporte_disponibles.txt"));
+    if (fc.showSaveDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION)return;
+
+    java.nio.file.Path destino = fc.getSelectedFile().toPath();
+    try(java.io.BufferedWriter bw = java.nio.file.Files.newBufferedWriter(destino, java.nio.charset.StandardCharsets.UTF_8)){
+        // Encabezado dinámico
+        if (cols == 3) {
+            bw.write("RUT\tNombre\tÁrea");
+        } else {
+            bw.write("RUT\tNombre");
+        }
+        bw.newLine();
+
+        for(int i = 0; i < m.getRowCount(); i++){
+            if (cols == 3) {
+                bw.write(m.getValueAt(i,0) + "\t" + m.getValueAt(i,1) + "\t" + m.getValueAt(i,2));
+            } else {
+                bw.write(m.getValueAt(i,0) + "\t" + m.getValueAt(i,1));
+            }
+            bw.newLine();
+        }
+    } catch (java.io.IOException ex){
+        javax.swing.JOptionPane.showMessageDialog(this, "No se pudo escribir:\n" + ex.getMessage(),
+                "Exportar", javax.swing.JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    javax.swing.JOptionPane.showMessageDialog(this, "Reporte guardado.");
     }
     
     @SuppressWarnings("unchecked")
@@ -96,15 +160,22 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable();
         jComboBox1 = new javax.swing.JComboBox<>();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        jTable2 = new javax.swing.JTable();
-        jLabel1 = new javax.swing.JLabel();
         jTextField1 = new javax.swing.JTextField();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTable1 = new javax.swing.JTable();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
+        jButton1.setText("Buscar");
+
+        jButton2.setText("Exportar");
+
+        jTextField1.setText("Fecha(yyyy-MM-aaaa)");
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -119,31 +190,6 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
         ));
         jScrollPane1.setViewportView(jTable1);
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
-        jButton1.setText("Buscar");
-
-        jButton2.setText("Exportar");
-
-        jTable2.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
-            }
-        ));
-        jScrollPane2.setViewportView(jTable2);
-
-        jLabel1.setText("Bloque");
-
-        jTextField1.setText("Fecha(yyyy-MM-aaaa)");
-
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -156,13 +202,10 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
                         .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(92, 92, 92)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jLabel1))
+                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButton2))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 452, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 500, Short.MAX_VALUE)
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -173,14 +216,14 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel1)
                             .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(31, 31, 31)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jButton1)
-                            .addComponent(jButton2)))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(19, Short.MAX_VALUE))
+                            .addComponent(jButton2))
+                        .addGap(0, 213, Short.MAX_VALUE))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         pack();
@@ -232,11 +275,8 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JComboBox<String> jComboBox1;
-    private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
-    private javax.swing.JTable jTable2;
     private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
 }

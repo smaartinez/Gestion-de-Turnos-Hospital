@@ -39,7 +39,9 @@ public class GestionTurnosHospital {
     public static Hospital getHospital() {
         return hospital;
     }
-
+    private static java.nio.file.Path ultimoCsvDisponibilidades;
+    public static void setUltimoCsvDisponibilidades(java.nio.file.Path p){ ultimoCsvDisponibilidades = p; }
+    public static java.nio.file.Path getUltimoCsvDisponibilidades(){ return ultimoCsvDisponibilidades; }
     // ===================== MENUS =====================
 
     private static void mostrarMenuPrincipal() {

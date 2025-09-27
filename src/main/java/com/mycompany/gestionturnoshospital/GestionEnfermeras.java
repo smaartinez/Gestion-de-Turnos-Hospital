@@ -4,7 +4,9 @@
  */
 package com.mycompany.gestionturnoshospital;
 import java.util.logging.Logger;
-
+import javax.swing.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 /**
  *
  * @author samuelastudillo
@@ -22,6 +24,7 @@ public class GestionEnfermeras extends javax.swing.JDialog {
         super(parent, modal);
         this.enfSvc = enfSvc;   // ✅ ahora sí tienes la instancia aquí
         initComponents();
+        btnGestionarDisponibilidad.addActionListener(e -> btnGestionarDisponibilidadActionPerformed(null));
         pack();
         setLocationRelativeTo(parent);
     }
@@ -77,6 +80,11 @@ public class GestionEnfermeras extends javax.swing.JDialog {
         });
 
         btnGestionarDisponibilidad.setText("Gestionar Disponibilidad");
+        btnGestionarDisponibilidad.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGestionarDisponibilidadActionPerformed(evt);
+            }
+        });
 
         btnVolver.setText("Volver");
         btnVolver.addActionListener(new java.awt.event.ActionListener() {
@@ -159,6 +167,56 @@ public class GestionEnfermeras extends javax.swing.JDialog {
         dlg.setVisible(true);
         if (dlgLista != null && dlgLista.isShowing()) dlgLista.cargarTabla();
     }//GEN-LAST:event_btnEliminarEActionPerformed
+
+    private void btnGestionarDisponibilidadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGestionarDisponibilidadActionPerformed
+        String rut = JOptionPane.showInputDialog(this, "RUT de la enfermera:");
+        if (rut == null || rut.trim().isEmpty()) return;
+
+        Enfermera e = enfSvc.buscarPorRut(rut);
+        if (e == null) {
+            JOptionPane.showMessageDialog(this, "No existe una enfermera con ese RUT.");
+            return;
+            }
+
+            
+        JTextField tfFecha = new JTextField(LocalDate.now().toString()); // yyyy-MM-dd
+        JComboBox<String> cbBloque = new JComboBox<>(new String[]{"MANANA","TARDE","NOCHE"});
+        JCheckBox chkDisp = new JCheckBox("Disponible", true);
+
+        JPanel p = new JPanel(new java.awt.GridLayout(0,2,6,6));
+        p.add(new JLabel("Fecha (yyyy-MM-dd):")); p.add(tfFecha);
+        p.add(new JLabel("Bloque:")); p.add(cbBloque);
+        p.add(new JLabel(""));p.add(chkDisp);
+
+        int r = JOptionPane.showConfirmDialog(
+            this, p,
+            "Gestionar disponibilidad de " + e.getNombre(),
+            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (r != JOptionPane.OK_OPTION) return;
+
+            
+        LocalDate fecha;
+        try {
+            fecha = LocalDate.parse(tfFecha.getText().trim());
+        } catch (DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(this, "Fecha inválida. Formato: yyyy-MM-dd");
+            return;
+        }
+        String bTxt = cbBloque.getSelectedItem().toString().toUpperCase();
+        Bloque bloque;
+        try {
+            bloque = Bloque.valueOf(bTxt); 
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, "Bloque inválido.");
+            return;
+        }
+
+        boolean disponible = chkDisp.isSelected();
+        e.setDisponibilidad(fecha, bloque, disponible);
+        JOptionPane.showMessageDialog(this,
+            "Disponibilidad actualizada:\n" +
+            fecha + " " + bloque + " → " + (disponible ? "DISPONIBLE" : "NO DISPONIBLE"));
+    }//GEN-LAST:event_btnGestionarDisponibilidadActionPerformed
     
 
     /**
