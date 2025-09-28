@@ -30,6 +30,6 @@ podrán utilizar nuestro programa de manera correcta.
 ### Observaciones
 
 - Al momento de buscar a las enfermeras, el formato de busqueda de rut será por ej: 1.234.567-8, así el programa los encontrará eficazmente, sino les aparecerá un mensaje de error.
-- Además el programa funciona con el formato fecha YYYY-MM-DD. Las fechas de las disponibilidades de las enfermeras empiezan desde 2025-09-29 SINO NO ENCONTRARÁN NINGUNA ENFERMERA.
+- Además el programa funciona con el formato fecha **YYYY-MM-DD**. **Las fechas de las disponibilidades de las enfermeras empiezan desde 2025-09-29 SINO NO ENCONTRARÁN NINGUNA ENFERMERA**.
 - Una funcionalidad les retornará un archivo .txt que se guardará en los archivos de este programa, para su simple acceso.
 
