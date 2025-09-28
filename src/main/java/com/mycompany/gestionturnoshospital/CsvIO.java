@@ -7,6 +7,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import excepciones.DatosInconsistentesException;
+
 public final class CsvIO {
     private static final String ENF_CSV  = "enfermeras.csv";
     private static final String AREA_CSV = "areas.csv";
@@ -31,7 +33,11 @@ public final class CsvIO {
             pw.println("rut,nombre,horasMensualMax,skills");
             for (Enfermera e : enfSvc.listar()) {
                 String skills = String.join(";", e.getSkills()); // usa ; para no chocar con comas
-                pw.printf("%s,%s,%d,%s%n", sanitize(e.getRut()), sanitize(e.getNombre()), e.getHorasMensualMax(), sanitize(skills));
+                pw.printf("%s,%s,%d,%s%n",
+                        sanitize(e.getRut()),
+                        sanitize(e.getNombre()),
+                        e.getHorasMensualMax(),
+                        sanitize(skills));
             }
         }
     }
@@ -43,7 +49,12 @@ public final class CsvIO {
             for (Area a : hospital.getAreas()) {
                 String skills = String.join(";", a.getSkillsRequeridas());
                 pw.printf("%d,%s,%d,%d,%d,%s%n",
-                        a.getId(), sanitize(a.getNombre()), a.getCuposManana(), a.getCuposTarde(), a.getCuposNoche(), sanitize(skills));
+                        a.getId(),
+                        sanitize(a.getNombre()),
+                        a.getCuposManana(),
+                        a.getCuposTarde(),
+                        a.getCuposNoche(),
+                        sanitize(skills));
             }
         }
     }
@@ -78,12 +89,27 @@ public final class CsvIO {
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] t = splitCsv(line);
-                    if (t.length < 4) continue;
-                    String rut = t[0];
-                    String nombre = t[1];
-                    int max = Integer.parseInt(t[2].trim());
-                    List<String> skills = parseSkills(t[3]);
-                    enfSvc.agregar(nombre, rut, skills, max);
+                    try {
+                        if (t.length < 4) {
+                            throw new DatosInconsistentesException("ENF: columnas insuficientes: " + Arrays.toString(t));
+                        }
+                        String rut = t[0];
+                        String nombre = t[1];
+                        int max = Integer.parseInt(t[2].trim());
+                        List<String> skills = parseSkills(t[3]);
+                        enfSvc.agregar(nombre, rut, skills, max);
+                    } catch (NumberFormatException e) {
+                        try {
+                            throw new DatosInconsistentesException(
+                                    "ENF: error numérico en fila: " + Arrays.toString(t), e);
+                        } catch (DatosInconsistentesException die) {
+                            System.err.println(die.getMessage());
+                            // continuar con siguiente fila
+                        }
+                    } catch (DatosInconsistentesException die) {
+                        System.err.println(die.getMessage());
+                        // continuar con siguiente fila
+                    }
                 }
             }
         }
@@ -108,7 +134,7 @@ public final class CsvIO {
             }
         }
 
-        // DISPONIBILIDADES (acepta con/ sin columna area; usamos la simple)
+        // DISPONIBILIDADES (acepta con/sin columna area; usamos la simple)
         Path disp = findByHeader(folder, "rut,fecha,bloque,disponible");
         if (disp == null) disp = findByHeader(folder, "rut,fecha,bloque,area,disponible");
         if (disp != null) {
@@ -118,15 +144,29 @@ public final class CsvIO {
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] t = splitCsv(line);
-                    if ((!conArea && t.length < 4) || (conArea && t.length < 5)) continue;
-                    String rut = t[0];
-                    var e = enfSvc.buscarPorRut(rut);
-                    if (e == null) continue; // disponibilidad para rut no cargado
-                    var fecha = java.time.LocalDate.parse(t[1].trim());
-                    var bloque = Bloque.valueOf(t[2].trim().toUpperCase());
-                    String dispStr = conArea ? t[4] : t[3];
-                    boolean disponible = dispStr.trim().equals("1") || dispStr.trim().equalsIgnoreCase("true");
-                    e.setDisponibilidad(fecha, bloque, disponible);
+                    try {
+                        if ((!conArea && t.length < 4) || (conArea && t.length < 5)) {
+                            throw new DatosInconsistentesException("DISP: columnas insuficientes: " + Arrays.toString(t));
+                        }
+                        String rut = t[0];
+                        Enfermera e = enfSvc.buscarPorRut(rut);
+                        if (e == null) {
+                            throw new DatosInconsistentesException("DISP: RUT no encontrado: " + rut);
+                        }
+                        var fecha = java.time.LocalDate.parse(t[1].trim());
+                        var bloque = Bloque.valueOf(t[2].trim().toUpperCase());
+                        String dispStr = conArea ? t[4] : t[3];
+                        boolean disponible = dispStr.trim().equals("1") || dispStr.trim().equalsIgnoreCase("true");
+                        e.setDisponibilidad(fecha, bloque, disponible);
+                    } catch (Exception any) { // DateTimeParseException, IllegalArgumentException (enum), etc.
+                        try {
+                            throw new DatosInconsistentesException(
+                                    "DISP: error parseando fila: " + Arrays.toString(t), any);
+                        } catch (DatosInconsistentesException die) {
+                            System.err.println(die.getMessage());
+                            // continuar con siguiente fila
+                        }
+                    }
                 }
             }
         }

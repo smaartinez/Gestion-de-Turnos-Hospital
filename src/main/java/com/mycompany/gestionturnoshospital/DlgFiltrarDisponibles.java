@@ -7,6 +7,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
+import excepciones.ReporteVacioException;
 
 
 /**
@@ -82,19 +83,31 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
         }
     }
     private void exportar(){
-    javax.swing.table.DefaultTableModel m = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+    javax.swing.table.DefaultTableModel m =
+            (javax.swing.table.DefaultTableModel) jTable1.getModel();
     int cols = m.getColumnCount();
-    if (m.getRowCount() == 0){
-        javax.swing.JOptionPane.showMessageDialog(this, "No hay resultados para exportar.");
+
+    try {
+        if (m.getRowCount() == 0){
+            throw new ReporteVacioException("No hay resultados para exportar.");
+        }
+    } catch (ReporteVacioException e) {
+        javax.swing.JOptionPane.showMessageDialog(
+                this, e.getMessage(), "Información",
+                javax.swing.JOptionPane.INFORMATION_MESSAGE
+        );
         return;
     }
+
     javax.swing.JFileChooser fc = new javax.swing.JFileChooser();
     fc.setDialogTitle("Guardar reporte .txt");
     fc.setSelectedFile(new java.io.File("reporte_disponibles.txt"));
-    if (fc.showSaveDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION)return;
+    if (fc.showSaveDialog(this) != javax.swing.JFileChooser.APPROVE_OPTION) return;
 
     java.nio.file.Path destino = fc.getSelectedFile().toPath();
-    try(java.io.BufferedWriter bw = java.nio.file.Files.newBufferedWriter(destino, java.nio.charset.StandardCharsets.UTF_8)){
+    try (java.io.BufferedWriter bw = java.nio.file.Files.newBufferedWriter(
+            destino, java.nio.charset.StandardCharsets.UTF_8)) {
+
         // Encabezado dinámico
         if (cols == 3) {
             bw.write("RUT\tNombre\tÁrea");
@@ -103,7 +116,8 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
         }
         bw.newLine();
 
-        for(int i = 0; i < m.getRowCount(); i++){
+        // Filas
+        for (int i = 0; i < m.getRowCount(); i++) {
             if (cols == 3) {
                 bw.write(m.getValueAt(i,0) + "\t" + m.getValueAt(i,1) + "\t" + m.getValueAt(i,2));
             } else {
@@ -112,12 +126,15 @@ public class DlgFiltrarDisponibles extends javax.swing.JDialog {
             bw.newLine();
         }
     } catch (java.io.IOException ex){
-        javax.swing.JOptionPane.showMessageDialog(this, "No se pudo escribir:\n" + ex.getMessage(),
-                "Exportar", javax.swing.JOptionPane.ERROR_MESSAGE);
+        javax.swing.JOptionPane.showMessageDialog(
+                this, "No se pudo escribir:\n" + ex.getMessage(),
+                "Exportar", javax.swing.JOptionPane.ERROR_MESSAGE
+        );
         return;
     }
+
     javax.swing.JOptionPane.showMessageDialog(this, "Reporte guardado.");
-    }
+}
     
     @SuppressWarnings("unchecked")
     
