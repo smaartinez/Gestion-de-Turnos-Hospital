@@ -24,7 +24,7 @@
 - Luego de la ejecución nos aparecerá una ventana tal que asi
 <img width="384" height="360" alt="image" src="https://github.com/user-attachments/assets/8018f286-01a5-47e9-acc5-149d963e1f0e" />
 
-Donde deberan importar los csv's que ya vendran en el archivo.zip descargable, solamente deberan buscarlo en su repertorio donde hayan guardado el programa y seleccionar la carpeta Csv's. Así 
+Donde deberan seleccionar importar datos para luego, ingresar los csv's que ya vendran en el archivo.zip de este, solamente deberan buscarlo en su repertorio donde hayan guardado el programa y **seleccionar la carpeta Csv's**. Así 
 podrán utilizar nuestro programa de manera correcta.
 
 ### Observaciones
